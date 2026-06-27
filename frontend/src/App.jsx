@@ -51,74 +51,82 @@ function RequireStaffRole({ role, children }) {
   return children
 }
 
+function ComingSoon({ icon, title, description }) {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-cream p-4">
+      <div className="glass-card max-w-md rounded-3xl p-10 text-center">
+        <p className="mb-3 text-4xl">{icon}</p>
+        <h2 className="mb-1 text-lg font-semibold text-bark">{title}</h2>
+        <p className="text-sm font-light text-bark-light/50">{description}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <Routes>
-      {/* Patient onboarding - no traditional login/signup */}
-      <Route path="/onboarding" element={
-        <SkipIfAuthenticated>
-          <Onboarding />
-        </SkipIfAuthenticated>
-      } />
+      <Route
+        path="/onboarding"
+        element={
+          <SkipIfAuthenticated>
+            <Onboarding />
+          </SkipIfAuthenticated>
+        }
+      />
 
-      {/* Hidden staff portal */}
-      <Route path="/portal" element={
-        <SkipIfStaffAuthenticated>
-          <Portal />
-        </SkipIfStaffAuthenticated>
-      } />
+      <Route
+        path="/portal"
+        element={
+          <SkipIfStaffAuthenticated>
+            <Portal />
+          </SkipIfStaffAuthenticated>
+        }
+      />
 
-      {/* Staff workspaces */}
-      <Route path="/doctor" element={
-        <RequireStaffRole role="doctor">
-          <StaffWorkspace role="doctor" />
-        </RequireStaffRole>
-      } />
-      <Route path="/healer" element={
-        <RequireStaffRole role="healer">
-          <StaffWorkspace role="healer" />
-        </RequireStaffRole>
-      } />
+      <Route
+        path="/doctor"
+        element={
+          <RequireStaffRole role="doctor">
+            <StaffWorkspace role="doctor" />
+          </RequireStaffRole>
+        }
+      />
+      <Route
+        path="/healer"
+        element={
+          <RequireStaffRole role="healer">
+            <StaffWorkspace role="healer" />
+          </RequireStaffRole>
+        }
+      />
 
-      {/* Patient app */}
-      <Route element={
-        <RequirePatient>
-          <MainLayout />
-        </RequirePatient>
-      }>
+      <Route
+        element={
+          <RequirePatient>
+            <MainLayout />
+          </RequirePatient>
+        }
+      >
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/trang-chu" element={<Home />} />
         <Route path="/tin-nhan" element={<Messages />} />
-        <Route path="/cong-dong" element={
-          <div className="flex min-h-dvh items-center justify-center bg-cream p-4">
-            <div className="max-w-md text-center glass-card rounded-3xl p-10">
-              <p className="text-4xl mb-3">🌍</p>
-              <h2 className="text-lg font-semibold text-bark mb-1">Cộng đồng</h2>
-              <p className="text-sm text-bark-light/50 font-light">Sắp ra mắt...</p>
-            </div>
-          </div>
-        } />
-        <Route path="/tram-chua-lanh" element={
-          <div className="flex min-h-dvh items-center justify-center bg-cream p-4">
-            <div className="max-w-md text-center glass-card rounded-3xl p-10">
-              <p className="text-4xl mb-3">🌿</p>
-              <h2 className="text-lg font-semibold text-bark mb-1">Trạm chữa lành</h2>
-              <p className="text-sm text-bark-light/50 font-light">Sắp ra mắt...</p>
-            </div>
-          </div>
-        } />
-        <Route path="/ho-so" element={
-          <div className="flex min-h-dvh items-center justify-center bg-cream p-4">
-            <div className="max-w-md text-center glass-card rounded-3xl p-10">
-              <p className="text-4xl mb-3">👤</p>
-              <h2 className="text-lg font-semibold text-bark mb-1">Hồ sơ</h2>
-              <p className="text-sm text-bark-light/50 font-light">Sắp ra mắt...</p>
-            </div>
-          </div>
-        } />
+        <Route path="/nhan-tin" element={<Messages />} />
+        <Route
+          path="/cong-dong"
+          element={<ComingSoon icon="🌍" title="Cộng đồng" description="Sắp ra mắt..." />}
+        />
+        <Route
+          path="/tram-chua-lanh"
+          element={<ComingSoon icon="🌿" title="Trạm chữa lành" description="Sắp ra mắt..." />}
+        />
+        <Route
+          path="/ho-so"
+          element={<ComingSoon icon="👤" title="Hồ sơ" description="Sắp ra mắt..." />}
+        />
       </Route>
 
-      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
