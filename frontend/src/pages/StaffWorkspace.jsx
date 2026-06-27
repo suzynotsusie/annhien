@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -13,6 +13,8 @@ import {
   faUsers,
 } from '@fortawesome/free-solid-svg-icons'
 import { clearSession, readSession } from '../lib/auth'
+import { pendingVideoSeed, staffQueues, topicLabels } from '../lib/mockData'
+import { readPendingVideos, savePendingVideos } from '../lib/clientSafety'
 
 const workspaceCopy = {
   doctor: {
@@ -60,6 +62,10 @@ export default function StaffWorkspace({ role }) {
   const session = readSession()
   const config = workspaceCopy[role]
   const displayName = session.nickname || config.badge
+  const [status, setStatus] = useState('online')
+  const [queue, setQueue] = useState(() => staffQueues[role] || config.queue)
+  const [videoDraft, setVideoDraft] = useState({ title: '', topic: 'daily', videoUrl: '', description: '' })
+  const [pendingVideos, setPendingVideos] = useState(() => readPendingVideos(pendingVideoSeed))
 
   const now = useMemo(() => (
     new Intl.DateTimeFormat('vi-VN', {
@@ -74,6 +80,28 @@ export default function StaffWorkspace({ role }) {
   const handleLogout = () => {
     clearSession()
     navigate('/portal', { replace: true })
+  }
+
+  const claimNextCase = () => {
+    if (role !== 'healer' || queue.length === 0) return
+    setQueue((items) => items.slice(1))
+  }
+
+  const addPendingVideo = (event) => {
+    event.preventDefault()
+    if (!videoDraft.title.trim() || !videoDraft.videoUrl.trim()) return
+    const nextVideo = {
+      id: `pending-${Date.now()}`,
+      title: videoDraft.title.trim(),
+      topic: videoDraft.topic,
+      doctorName: displayName,
+      status: 'pending',
+      reason: 'Video URL được lưu ở frontend mock, chờ admin duyệt.',
+    }
+    const next = [nextVideo, ...pendingVideos]
+    setPendingVideos(next)
+    savePendingVideos(next)
+    setVideoDraft({ title: '', topic: 'daily', videoUrl: '', description: '' })
   }
 
   return (
@@ -96,7 +124,19 @@ export default function StaffWorkspace({ role }) {
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-sage-ghost px-4 py-2 text-sm font-bold text-sage-dark">{displayName}</span>
-            <button className="inline-flex h-11 items-center gap-2 rounded-full bg-sage px-4 text-sm font-bold text-white shadow-lg shadow-sage/20">
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="h-11 rounded-full border border-bark-light/8 bg-white/70 px-4 text-sm font-bold text-bark-light/70 outline-none"
+            >
+              <option value="online">Online</option>
+              <option value="busy">Bận</option>
+              <option value="offline">Offline</option>
+            </select>
+            <button
+              onClick={role === 'healer' ? claimNextCase : undefined}
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-sage px-4 text-sm font-bold text-white shadow-lg shadow-sage/20"
+            >
               <FontAwesomeIcon icon={role === 'doctor' ? faUpload : faComments} className="text-xs" />
               {config.primaryAction}
             </button>
@@ -136,34 +176,96 @@ export default function StaffWorkspace({ role }) {
             </div>
 
             <div className="grid gap-3">
-              {config.queue.map((item) => (
-                <button key={`${item.name}-${item.topic}`} className="grid gap-3 rounded-2xl border border-bark-light/6 bg-white/55 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 md:grid-cols-[160px_minmax(0,1fr)_220px] md:items-center">
+              {queue.map((item) => (
+                <button key={`${item.name}-${item.topic}`} className="grid gap-3 rounded-2xl border border-bark-light/6 bg-white/55 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 md:grid-cols-[150px_minmax(0,1fr)_210px] md:items-center">
                   <div>
                     <p className="font-bold text-bark">{item.name}</p>
-                    <p className="mt-1 text-xs text-bark-light/42">Ẩn danh</p>
+                    <p className="mt-1 text-xs text-bark-light/42">{item.wait || 'Ẩn danh'}</p>
                   </div>
-                  <p className="text-sm font-medium text-bark-light/70">{item.topic}</p>
+                  <div>
+                    <p className="text-sm font-medium text-bark-light/70">{item.topic}</p>
+                    {item.insight && <p className="mt-1 text-xs leading-5 text-bark-light/45">{item.insight}</p>}
+                  </div>
                   <span className="rounded-full bg-sage-ghost px-3 py-1 text-xs font-bold text-sage-dark md:text-center">
-                    {item.status}
+                    {item.risk ? `Rủi ro ${item.risk}` : item.status}
                   </span>
                 </button>
               ))}
+              {queue.length === 0 && (
+                <p className="rounded-2xl bg-sage-ghost/55 p-4 text-sm leading-6 text-bark-light/58">
+                  Hàng chờ hiện trống. Trạng thái của bạn vẫn được giữ ở frontend.
+                </p>
+              )}
             </div>
           </div>
 
-          <aside className="rounded-3xl border border-sage-light/20 bg-sage-ghost/60 p-5">
-            <h2 className="text-xl font-bold tracking-tight text-bark">Nguyên tắc vận hành</h2>
-            <div className="mt-5 grid gap-3">
-              {[
-                'Không yêu cầu user lộ danh tính trong hội thoại.',
-                'Chuyển bác sĩ khi có tín hiệu nguy cơ hoặc cần đánh giá chuyên môn.',
-                'Ghi chú ngắn, rõ ngữ cảnh, tránh diễn giải quá mức.',
-              ].map((item) => (
-                <div key={item} className="rounded-2xl border border-white/70 bg-white/50 p-4 text-sm leading-6 text-bark-light/65">
-                  {item}
+          <aside className="grid content-start gap-4">
+            <section className="rounded-3xl border border-sage-light/20 bg-sage-ghost/60 p-5">
+              <h2 className="text-xl font-bold tracking-tight text-bark">Nguyên tắc vận hành</h2>
+              <div className="mt-5 grid gap-3">
+                {[
+                  'Không yêu cầu user lộ danh tính trong hội thoại.',
+                  'Chuyển bác sĩ khi có tín hiệu nguy cơ hoặc cần đánh giá chuyên môn.',
+                  'Ghi chú ngắn, rõ ngữ cảnh, tránh diễn giải quá mức.',
+                ].map((item) => (
+                  <div key={item} className="rounded-2xl border border-white/70 bg-white/50 p-4 text-sm leading-6 text-bark-light/65">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {role === 'doctor' ? (
+              <section className="rounded-3xl border border-white/70 bg-white/58 p-5 shadow-sm shadow-sage/5">
+                <h2 className="text-xl font-bold tracking-tight text-bark">Gửi video URL</h2>
+                <p className="mt-1 text-sm leading-6 text-bark-light/50">Frontend mock, không upload file.</p>
+                <form onSubmit={addPendingVideo} className="mt-4 grid gap-3">
+                  <input
+                    value={videoDraft.title}
+                    onChange={(event) => setVideoDraft((draft) => ({ ...draft, title: event.target.value }))}
+                    placeholder="Tiêu đề video"
+                    className="h-11 rounded-2xl border border-bark-light/8 bg-white/70 px-4 text-sm outline-none focus:border-sage/40"
+                  />
+                  <select
+                    value={videoDraft.topic}
+                    onChange={(event) => setVideoDraft((draft) => ({ ...draft, topic: event.target.value }))}
+                    className="h-11 rounded-2xl border border-bark-light/8 bg-white/70 px-4 text-sm outline-none focus:border-sage/40"
+                  >
+                    {Object.entries(topicLabels).filter(([key]) => key !== 'all').map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                  <input
+                    value={videoDraft.videoUrl}
+                    onChange={(event) => setVideoDraft((draft) => ({ ...draft, videoUrl: event.target.value }))}
+                    placeholder="https://...mp4"
+                    className="h-11 rounded-2xl border border-bark-light/8 bg-white/70 px-4 text-sm outline-none focus:border-sage/40"
+                  />
+                  <button className="h-11 rounded-full bg-sage text-sm font-bold text-white shadow-lg shadow-sage/18">
+                    Đưa vào hàng chờ
+                  </button>
+                </form>
+                <div className="mt-5 grid gap-2">
+                  {pendingVideos.slice(0, 3).map((video) => (
+                    <div key={video.id} className="rounded-2xl border border-bark-light/7 bg-white/58 p-3">
+                      <p className="text-sm font-bold text-bark">{video.title}</p>
+                      <p className="mt-1 text-xs text-bark-light/45">{topicLabels[video.topic]} · {video.status}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </section>
+            ) : (
+              <section className="rounded-3xl border border-white/70 bg-white/58 p-5 shadow-sm shadow-sage/5">
+                <h2 className="text-xl font-bold tracking-tight text-bark">Khung ca đang mở</h2>
+                <p className="mt-2 text-sm leading-6 text-bark-light/58">
+                  Healer có thể nhận ca kế tiếp, ghi nhận insight và chuyển bác sĩ khi cần. Phần này là UI shell, chưa gọi backend.
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <button className="h-11 rounded-full bg-sage text-sm font-bold text-white">Chuyển bác sĩ</button>
+                  <button className="h-11 rounded-full border border-bark-light/8 bg-white text-sm font-bold text-bark-light/58">Đóng ca</button>
+                </div>
+              </section>
+            )}
           </aside>
         </section>
       </div>

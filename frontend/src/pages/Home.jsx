@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -10,15 +11,9 @@ import {
   faShieldHalved,
   faWandMagicSparkles,
 } from '@fortawesome/free-solid-svg-icons'
-import { conversations } from '../components/messaging/MessagingPanel'
-
-const moods = [
-  { emoji: '😊', label: 'Tuyệt vời', bg: 'bg-sun-light/70', border: 'border-sun/50' },
-  { emoji: '🙂', label: 'Ổn', bg: 'bg-sage-ghost', border: 'border-sage-light/30' },
-  { emoji: '😐', label: 'Bình thường', bg: 'bg-mist-light/70', border: 'border-mist/45' },
-  { emoji: '😮‍💨', label: 'Mệt mỏi', bg: 'bg-petal-light/70', border: 'border-petal/50' },
-  { emoji: '😟', label: 'Lo lắng', bg: 'bg-lavender-light/70', border: 'border-lavender/50' },
-]
+import SOSModal from '../components/ui/SOSModal'
+import { conversations, moodOptions } from '../lib/mockData'
+import { decryptClientSide, detectRisk, encryptClientSide, readJournals, saveJournals } from '../lib/clientSafety'
 
 const listeners = [
   { name: 'Chị Linh', tag: 'Áp lực học tập', initials: 'L', bg: 'bg-sage/10 text-sage-dark' },
@@ -44,6 +39,43 @@ export default function Home() {
   const nickname = localStorage.getItem('annhien_nickname') || 'Gió Nhẹ'
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0)
   const latestConversation = conversations[0]
+  const [selectedMood, setSelectedMood] = useState('good')
+  const [journalText, setJournalText] = useState('')
+  const [journals, setJournals] = useState(() => readJournals())
+  const [activeJournalId, setActiveJournalId] = useState(journals[0]?.id || null)
+  const [journalNotice, setJournalNotice] = useState('')
+  const [sos, setSos] = useState({ open: false, message: '' })
+
+  const activeJournal = useMemo(
+    () => journals.find((journal) => journal.id === activeJournalId) || journals[0],
+    [activeJournalId, journals],
+  )
+
+  const saveJournal = (event) => {
+    event.preventDefault()
+    const trimmed = journalText.trim()
+    if (!trimmed) return
+
+    const risk = detectRisk(trimmed)
+    if (risk.triggerSOS) {
+      setSos({ open: true, message: risk.suggestedResponse })
+      setJournalNotice('Mình đã giữ nội dung lại trên máy và mở SOS để cậu có hỗ trợ ngay.')
+      return
+    }
+
+    const nextJournal = {
+      id: `journal-${Date.now()}`,
+      encryptedContent: encryptClientSide(trimmed),
+      mood: selectedMood,
+      createdAt: new Date().toISOString(),
+    }
+    const nextJournals = [nextJournal, ...journals]
+    setJournals(nextJournals)
+    setActiveJournalId(nextJournal.id)
+    saveJournals(nextJournals)
+    setJournalText('')
+    setJournalNotice('Đã lưu nhật ký mã hóa trên trình duyệt này.')
+  }
 
   return (
     <div className="min-h-dvh bg-cream">
@@ -92,49 +124,69 @@ export default function Home() {
                 <FontAwesomeIcon icon={faLeaf} className="text-sage" />
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                {moods.map((mood) => (
+                {moodOptions.map((mood) => {
+                  const isActive = selectedMood === mood.id
+                  return (
                   <button
-                    key={mood.label}
-                    className={`flex min-h-20 items-center gap-3 rounded-2xl border px-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 active:scale-[0.98] ${mood.bg} ${mood.border}`}
+                    key={mood.id}
+                    onClick={() => setSelectedMood(mood.id)}
+                    className={`flex min-h-20 items-center gap-3 rounded-2xl border px-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 active:scale-[0.98] ${mood.tone} ${isActive ? 'ring-2 ring-sage/35' : ''}`}
                   >
                     <span className="text-2xl leading-none">{mood.emoji}</span>
                     <span className="text-sm font-semibold text-bark">{mood.label}</span>
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <Link
-                to="/"
-                className="group rounded-3xl border border-white/70 bg-white/60 p-5 shadow-sm shadow-sage/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sage/8"
+              <form
+                onSubmit={saveJournal}
+                className="group rounded-3xl border border-white/70 bg-white/60 p-5 shadow-sm shadow-sage/5"
               >
                 <div className="flex h-full min-h-52 flex-col justify-between gap-8">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sage-ghost text-sage">
                       <FontAwesomeIcon icon={faBookOpen} />
                     </div>
-                    <span className="rounded-full bg-sage-ghost px-3 py-1 text-xs font-bold text-sage-dark">Mở nhật ký</span>
+                    <span className="rounded-full bg-sage-ghost px-3 py-1 text-xs font-bold text-sage-dark">Mã hóa local</span>
                   </div>
                   <div>
                     <h2 className="mb-2 text-2xl font-bold tracking-tight text-bark">Nhật ký hôm nay</h2>
                     <p className="max-w-[56ch] text-sm leading-6 text-bark-light/58">
                       Trút bỏ suy nghĩ trong một không gian riêng tư, không phán xét.
                     </p>
-                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-sage">
-                      Viết dòng đầu tiên
-                      <FontAwesomeIcon icon={faChevronRight} className="text-xs transition-transform group-hover:translate-x-1" />
-                    </div>
+                    <textarea
+                      value={journalText}
+                      onChange={(event) => setJournalText(event.target.value)}
+                      rows={5}
+                      placeholder="Viết vài dòng cho chính mình..."
+                      className="mt-5 w-full resize-none rounded-2xl border border-bark-light/8 bg-white/70 p-4 text-sm leading-6 text-bark outline-none placeholder:text-bark-light/28 focus:border-sage/40"
+                    />
+                    {journalNotice && (
+                      <p className="mt-3 rounded-2xl bg-sage-ghost/65 px-4 py-3 text-sm leading-6 text-bark-light/65">
+                        {journalNotice}
+                      </p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={!journalText.trim()}
+                      className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-sage px-5 text-sm font-bold text-white shadow-lg shadow-sage/18 transition hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      Lưu nhật ký
+                      <FontAwesomeIcon icon={faChevronRight} className="text-xs" />
+                    </button>
                   </div>
                 </div>
-              </Link>
+              </form>
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 <div className="rounded-3xl border border-white/70 bg-white/50 p-5">
                   <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-bark-light/38">Chuỗi nhật ký</p>
                   <div className="flex items-end gap-2">
-                    <span className="text-5xl font-bold leading-none text-sage-dark">7</span>
-                    <span className="pb-1 text-sm font-medium text-bark-light/55">ngày liên tiếp</span>
+                    <span className="text-5xl font-bold leading-none text-sage-dark">{Math.max(1, journals.length || 0)}</span>
+                    <span className="pb-1 text-sm font-medium text-bark-light/55">lần check-in</span>
                   </div>
                 </div>
                 <div className="rounded-3xl border border-white/70 bg-sage-ghost/65 p-5">
@@ -239,9 +291,48 @@ export default function Home() {
                 ))}
               </div>
             </section>
+
+            <section className="rounded-3xl border border-white/70 bg-white/50 p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold tracking-tight text-bark">Lịch sử nhật ký</h2>
+                  <p className="text-xs text-bark-light/45">Giải mã ngay trên trình duyệt.</p>
+                </div>
+                <span className="rounded-full bg-sage-ghost px-3 py-1 text-xs font-bold text-sage-dark">{journals.length}</span>
+              </div>
+              {journals.length === 0 ? (
+                <p className="rounded-2xl bg-sage-ghost/55 p-4 text-sm leading-6 text-bark-light/58">
+                  Chưa có nhật ký nào. Một dòng ngắn cũng đủ để bắt đầu.
+                </p>
+              ) : (
+                <div className="grid gap-3">
+                  <div className="rounded-2xl border border-bark-light/7 bg-white/55 p-4">
+                    <p className="line-clamp-4 text-sm leading-6 text-bark">
+                      {decryptClientSide(activeJournal?.encryptedContent || '')}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                    {journals.slice(0, 8).map((journal) => (
+                      <button
+                        key={journal.id}
+                        onClick={() => setActiveJournalId(journal.id)}
+                        className={`shrink-0 rounded-full px-3 py-2 text-xs font-bold transition active:scale-[0.98] ${
+                          activeJournal?.id === journal.id
+                            ? 'bg-sage text-white'
+                            : 'border border-bark-light/8 bg-white/60 text-bark-light/52'
+                        }`}
+                      >
+                        {moodOptions.find((mood) => mood.id === journal.mood)?.emoji} {new Date(journal.createdAt).toLocaleDateString('vi-VN')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
           </aside>
         </main>
       </div>
+      <SOSModal open={sos.open} message={sos.message} onClose={() => setSos({ open: false, message: '' })} />
     </div>
   )
 }

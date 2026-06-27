@@ -2,15 +2,12 @@ import { useMemo, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faEllipsis,
-  faFaceSmile,
-  faImage,
   faMagnifyingGlass,
-  faMicrophone,
   faPaperPlane,
-  faPhone,
-  faVideo,
+  faShieldHalved,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import { conversations } from '../components/messaging/MessagingPanel'
+import { conversations } from '../lib/mockData'
 
 export default function Messages() {
   const [activeId, setActiveId] = useState(conversations[0]?.id)
@@ -126,7 +123,7 @@ export default function Messages() {
                   <p className="text-xs text-bark-light/42">{activeChat.online ? 'Đang hoạt động' : 'Ngoại tuyến'}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  {[faPhone, faVideo, faEllipsis].map((icon, index) => (
+                  {[faUserGroup, faShieldHalved, faEllipsis].map((icon, index) => (
                     <button
                       key={index}
                       className="flex h-10 w-10 items-center justify-center rounded-2xl text-sage transition hover:bg-sage-ghost active:scale-95"
@@ -164,13 +161,6 @@ export default function Messages() {
 
               <footer className="border-t border-bark-light/6 bg-cream/60 px-4 py-3 sm:px-5">
                 <div className="mx-auto flex max-w-4xl items-end gap-2">
-                  <div className="hidden items-center gap-1 pb-1 sm:flex">
-                    {[faImage, faFaceSmile].map((icon) => (
-                      <button key={icon.iconName} className="flex h-10 w-10 items-center justify-center rounded-2xl text-sage/75 transition hover:bg-white/70 active:scale-95">
-                        <FontAwesomeIcon icon={icon} />
-                      </button>
-                    ))}
-                  </div>
                   <input
                     type="text"
                     placeholder="Nhắn tin..."
@@ -185,15 +175,19 @@ export default function Messages() {
                     className="min-h-11 flex-1 rounded-2xl border border-bark-light/8 bg-white/70 px-4 text-sm text-bark placeholder:text-bark-light/28 focus:border-sage/35 focus:bg-white focus:outline-none"
                   />
                   <button
-                    onClick={inputValue.trim() ? handleSend : undefined}
+                    onClick={handleSend}
+                    disabled={!inputValue.trim()}
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition active:scale-95 ${
                       inputValue.trim() ? 'bg-sage text-white shadow-lg shadow-sage/18' : 'bg-white/70 text-sage/70'
                     }`}
-                    aria-label={inputValue.trim() ? 'Gửi tin nhắn' : 'Ghi âm'}
+                    aria-label="Gửi tin nhắn"
                   >
-                    <FontAwesomeIcon icon={inputValue.trim() ? faPaperPlane : faMicrophone} />
+                    <FontAwesomeIcon icon={faPaperPlane} />
                   </button>
                 </div>
+                <p className="mx-auto mt-2 max-w-4xl text-[11px] text-bark-light/36">
+                  Chat chỉ hỗ trợ văn bản để giữ an toàn và riêng tư.
+                </p>
               </footer>
             </>
           )}

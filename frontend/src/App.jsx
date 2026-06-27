@@ -5,11 +5,16 @@ import Onboarding from './pages/Onboarding'
 import Messages from './pages/Messages'
 import Portal from './pages/Portal'
 import StaffWorkspace from './pages/StaffWorkspace'
+import Community from './pages/Community'
+import HealingStation from './pages/HealingStation'
+import Profile from './pages/Profile'
+import Admin from './pages/Admin'
 import { readSession } from './lib/auth'
 
 function staffHome(role) {
   if (role === 'doctor') return '/doctor'
   if (role === 'healer') return '/healer'
+  if (role === 'admin') return '/admin'
   return '/'
 }
 
@@ -18,7 +23,7 @@ function RequirePatient({ children }) {
   if (!token) {
     return <Navigate to="/onboarding" replace />
   }
-  if (role === 'doctor' || role === 'healer') {
+  if (role === 'doctor' || role === 'healer' || role === 'admin') {
     return <Navigate to={staffHome(role)} replace />
   }
   return children
@@ -34,7 +39,7 @@ function SkipIfAuthenticated({ children }) {
 
 function SkipIfStaffAuthenticated({ children }) {
   const { token, role } = readSession()
-  if (token && (role === 'doctor' || role === 'healer')) {
+  if (token && (role === 'doctor' || role === 'healer' || role === 'admin')) {
     return <Navigate to={staffHome(role)} replace />
   }
   return children
@@ -67,6 +72,11 @@ export default function App() {
           <Portal />
         </SkipIfStaffAuthenticated>
       } />
+      <Route path="/staff" element={
+        <SkipIfStaffAuthenticated>
+          <Portal />
+        </SkipIfStaffAuthenticated>
+      } />
 
       {/* Staff workspaces */}
       <Route path="/doctor" element={
@@ -79,6 +89,11 @@ export default function App() {
           <StaffWorkspace role="healer" />
         </RequireStaffRole>
       } />
+      <Route path="/admin" element={
+        <RequireStaffRole role="admin">
+          <Admin />
+        </RequireStaffRole>
+      } />
 
       {/* Patient app */}
       <Route element={
@@ -88,34 +103,12 @@ export default function App() {
       }>
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/trang-chu" element={<Home />} />
         <Route path="/tin-nhan" element={<Messages />} />
-        <Route path="/cong-dong" element={
-          <div className="flex min-h-dvh items-center justify-center bg-cream p-4">
-            <div className="max-w-md text-center glass-card rounded-3xl p-10">
-              <p className="text-4xl mb-3">🌍</p>
-              <h2 className="text-lg font-semibold text-bark mb-1">Cộng đồng</h2>
-              <p className="text-sm text-bark-light/50 font-light">Sắp ra mắt...</p>
-            </div>
-          </div>
-        } />
-        <Route path="/tram-chua-lanh" element={
-          <div className="flex min-h-dvh items-center justify-center bg-cream p-4">
-            <div className="max-w-md text-center glass-card rounded-3xl p-10">
-              <p className="text-4xl mb-3">🌿</p>
-              <h2 className="text-lg font-semibold text-bark mb-1">Trạm chữa lành</h2>
-              <p className="text-sm text-bark-light/50 font-light">Sắp ra mắt...</p>
-            </div>
-          </div>
-        } />
-        <Route path="/ho-so" element={
-          <div className="flex min-h-dvh items-center justify-center bg-cream p-4">
-            <div className="max-w-md text-center glass-card rounded-3xl p-10">
-              <p className="text-4xl mb-3">👤</p>
-              <h2 className="text-lg font-semibold text-bark mb-1">Hồ sơ</h2>
-              <p className="text-sm text-bark-light/50 font-light">Sắp ra mắt...</p>
-            </div>
-          </div>
-        } />
+        <Route path="/nhan-tin" element={<Messages />} />
+        <Route path="/cong-dong" element={<Community />} />
+        <Route path="/tram-chua-lanh" element={<HealingStation />} />
+        <Route path="/ho-so" element={<Profile />} />
       </Route>
 
       {/* Fallback */}
