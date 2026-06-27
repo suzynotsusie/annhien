@@ -8,6 +8,7 @@ import {
   faUser,
   faLeaf,
 } from '@fortawesome/free-solid-svg-icons'
+import ThemeToggle from '../ui/ThemeToggle'
 
 const navItems = [
   { icon: faHouse, label: 'Trang chủ', to: '/' },
@@ -64,7 +65,8 @@ export default function Sidebar() {
       </nav>
 
       {/* ─── User info compact ─── */}
-      <div className="px-4 pb-5">
+      <div className="grid gap-3 px-4 pb-5">
+        <ThemeToggle />
         <div className="flex items-center gap-2.5 px-2 py-2.5">
           <div className="w-8 h-8 rounded-lg bg-sage/10 flex items-center justify-center">
             <FontAwesomeIcon icon={faUser} className="text-xs text-sage" />

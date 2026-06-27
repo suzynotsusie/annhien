@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Gió Nhẹ">
+  <rect width="512" height="512" rx="144" fill="#dce8de"/>
+  <circle cx="168" cy="164" r="92" fill="#a8c4ae"/>
+  <circle cx="348" cy="184" r="118" fill="#e8eef4"/>
+  <circle cx="250" cy="306" r="148" fill="#7f9f86"/>
+  <text x="256" y="294" text-anchor="middle" dominant-baseline="middle" font-family="system-ui, sans-serif" font-size="108" font-weight="800" fill="#ffffff">G</text>
+</svg>
