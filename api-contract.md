@@ -155,8 +155,11 @@ Hoặc flat object nếu rõ ràng (ví dụ: `{ "token": "...", "userId": "..."
 ### Bảng `users`
 ```sql
 id           UUID    PRIMARY KEY DEFAULT uuid_generate_v4()
+username     VARCHAR(50)  UNIQUE       -- Dành cho đăng nhập (Staff)
+password_hash VARCHAR(255)             -- Dành cho đăng nhập (Staff)
 nickname     VARCHAR(50)  NOT NULL
 role         VARCHAR(20)  NOT NULL DEFAULT 'user'  -- 'user','healer','doctor','admin'
+status       VARCHAR(20)  NOT NULL DEFAULT 'offline' -- 'online','busy','offline'
 topics       JSONB        NOT NULL DEFAULT '[]'     -- ['study','family','relationship','daily']
 created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 ```
@@ -233,7 +236,7 @@ created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ### 5.1 Auth
 
 #### `POST /api/auth/setup`
-Tạo tài khoản ẩn danh và nhận JWT token.
+Tạo tài khoản ẩn danh và nhận JWT token. Hệ thống tự động gán `role = 'user'`.
 
 **Auth**: Không cần
 
@@ -241,8 +244,7 @@ Tạo tài khoản ẩn danh và nhận JWT token.
 ```json
 {
   "nickname": "Dương",
-  "topics": ["study", "daily"],
-  "role": "user"
+  "topics": ["study", "daily"]
 }
 ```
 
@@ -260,7 +262,36 @@ Tạo tài khoản ẩn danh và nhận JWT token.
 **Validation**:
 - `nickname`: 1–50 ký tự, bắt buộc
 - `topics`: mảng string, có thể rỗng
-- `role`: một trong `['user', 'healer', 'doctor', 'admin']`, mặc định `'user'`
+
+---
+
+#### `POST /api/auth/login`
+Đăng nhập dành cho nhân viên (Bác sĩ, Healer).
+
+**Auth**: Không cần
+
+**Request**:
+```json
+{
+  "username": "dr_lanhuong",
+  "password": "secure_password"
+}
+```
+
+**Response `200`**:
+```json
+{
+  "userId": "uuid",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "nickname": "ThS. BS Nguyễn Lân Hương",
+  "role": "doctor",
+  "expiresIn": 31536000
+}
+```
+
+**Validation**:
+- `username`: chuỗi, bắt buộc
+- `password`: chuỗi, bắt buộc
 
 ---
 
@@ -278,6 +309,23 @@ Lấy thông tin user hiện tại.
   "topics": ["study", "daily"],
   "createdAt": "2025-06-27T07:30:00.000Z"
 }
+```
+
+---
+
+#### `PATCH /api/auth/status`
+Cập nhật trạng thái online/busy/offline cho Healer/Doctor.
+
+**Auth**: Bearer token (chỉ cho role `healer` hoặc `doctor`)
+
+**Request**:
+```json
+{ "status": "busy" }
+```
+
+**Response `200`**:
+```json
+{ "id": "user-uuid", "status": "busy" }
 ```
 
 ---
@@ -556,6 +604,24 @@ Healer nhận ca.
 
 ---
 
+#### `POST /api/conversations/:id/transfer`
+Healer chuyển ca cho Bác sĩ (chỉ dùng khi phát hiện ca cần y khoa).
+
+**Auth**: Bearer token (role `healer`)
+
+**Request**: `{}` (empty body)
+
+**Response `200`**:
+```json
+{
+  "conversationId": "conv-uuid",
+  "status": "waiting",
+  "healerId": null
+}
+```
+
+---
+
 #### `POST /api/messages`
 Gửi tin nhắn và lưu vào DB. Backend gọi Gemini nếu `senderRole = 'ai'`.
 
@@ -655,6 +721,32 @@ Lấy videos đã được duyệt.
       "saved": 890
     }
   ]
+}
+```
+
+---
+
+#### `POST /api/videos`
+Bác sĩ tải lên video mới (lưu URL thay vì file thực tế).
+
+**Auth**: Bearer token + role `doctor`
+
+**Request**:
+```json
+{
+  "title": "Tập thở 4-7-8",
+  "topic": "daily",
+  "videoUrl": "/assets/videos/vid_1_breathe.mp4",
+  "description": "Hướng dẫn thở..."
+}
+```
+
+**Response `201`**:
+```json
+{
+  "id": "vid-uuid",
+  "status": "pending",
+  "createdAt": "2025-06-27T07:30:00.000Z"
 }
 ```
 

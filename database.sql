@@ -11,11 +11,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 --    Lưu thông tin người dùng ẩn danh, healers, doctors, admin
 -- =========================================================
 CREATE TABLE IF NOT EXISTS users (
-  id         UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  nickname   VARCHAR(50) NOT NULL,
-  role       VARCHAR(20) NOT NULL DEFAULT 'user',  -- 'user' | 'healer' | 'doctor' | 'admin'
-  topics     JSONB       NOT NULL DEFAULT '[]',     -- ['study','family','relationship','daily']
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id            UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+  username      VARCHAR(50)  UNIQUE, -- Dành cho Bác sĩ & Healer đăng nhập
+  password_hash VARCHAR(255),        -- Dành cho Bác sĩ & Healer đăng nhập
+  nickname      VARCHAR(50)  NOT NULL,
+  role          VARCHAR(20)  NOT NULL DEFAULT 'user',  -- 'user' | 'healer' | 'doctor' | 'admin'
+  status        VARCHAR(20)  NOT NULL DEFAULT 'offline', -- 'online' | 'busy' | 'offline'
+  topics        JSONB        NOT NULL DEFAULT '[]',     -- ['study','family','relationship','daily']
+  created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 -- =========================================================
