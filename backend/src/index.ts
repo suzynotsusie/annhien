@@ -66,8 +66,8 @@ app.use('/api/ai', aiRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  logInfo(`An Nhien Backend dang chay tai http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  logInfo(`An Nhien Backend dang chay tai port ${PORT}`);
   logInfo(`Health check: http://localhost:${PORT}/api/health`);
 });
 
