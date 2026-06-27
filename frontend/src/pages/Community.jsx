@@ -11,6 +11,7 @@ import {
 import SOSModal from '../components/ui/SOSModal'
 import { communitySeed, communityTopics, topicLabels } from '../lib/mockData'
 import { API_URL, readSession } from '../lib/auth'
+import { apiFetch } from '../lib/api-client'
 import {
   detectBlockedContent,
   detectRisk,
@@ -54,12 +55,8 @@ export default function Community() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const { token } = readSession()
-        const res = await fetch(`${API_URL}/api/posts`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
-        const data = await res.json()
-        if (data.posts) {
+        const data = await apiFetch('/api/posts')
+        if (data && data.posts) {
           setPosts(data.posts.map(normalizePost))
         }
       } catch (e) {
@@ -84,18 +81,12 @@ export default function Community() {
     if (!trimmed) return
 
     try {
-      const { token } = readSession()
-      const res = await fetch(`${API_URL}/api/posts`, {
+      const data = await apiFetch('/api/posts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
         body: JSON.stringify({ content: trimmed, topic, isAnonymous: true })
       })
-      const data = await res.json()
       
-      if (data.post) {
+      if (data && data.post) {
         const nextPost = normalizePost(data.post)
         setPosts(prev => [nextPost, ...prev])
         
@@ -119,20 +110,39 @@ export default function Community() {
     setTimeout(() => setNotice(''), 4000)
   }
 
-  const reactToPost = (postId, reactionId) => {
-    const nextPosts = posts.map((post) => {
-      if (post.id !== postId) return post
+  const reactToPost = async (postId, reactionId) => {
+    const { token } = readSession()
+    if (!token) {
+      alert('Vui lòng đăng nhập để tương tác!')
+      return
+    }
 
-      const previous = post.userReaction
-      const reactions = { ...post.reactions }
-      if (previous) reactions[previous] = Math.max(0, reactions[previous] - 1)
-      const nextReaction = previous === reactionId ? null : reactionId
-      if (nextReaction) reactions[nextReaction] += 1
+    // Map UI reactions to backend expected ones
+    const backendReaction = reactionId === 'care' ? 'hug' : (reactionId === 'like' || reactionId === 'love') ? 'empathy' : reactionId;
 
-      return { ...post, reactions, userReaction: nextReaction }
-    })
+    try {
+      await apiFetch(`/api/posts/${postId}/react`, {
+        method: 'POST',
+        body: JSON.stringify({ reaction: backendReaction })
+      })
 
-    persistPosts(nextPosts)
+      const nextPosts = posts.map((post) => {
+        if (post.id !== postId) return post
+
+        const previous = post.userReaction
+        const reactions = { ...post.reactions }
+        if (previous) reactions[previous] = Math.max(0, reactions[previous] - 1)
+        const nextReaction = previous === reactionId ? null : reactionId
+        if (nextReaction) reactions[nextReaction] += 1
+
+        return { ...post, reactions, userReaction: nextReaction }
+      })
+
+      persistPosts(nextPosts)
+    } catch (e) {
+      console.error('Failed to react:', e)
+      alert('Có lỗi xảy ra, vui lòng thử lại sau.')
+    }
   }
 
   const handleReport = async (postId) => {

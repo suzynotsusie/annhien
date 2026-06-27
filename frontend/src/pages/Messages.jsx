@@ -54,6 +54,8 @@ export default function Messages() {
           if (newConvo) convos = [newConvo]
         }
 
+        const staffQueueIds = JSON.parse(localStorage.getItem('staff_queue_ids') || '[]')
+
         const formatted = convos.map(c => {
           let name = 'An Nhiên AI'
           let lastMsg = 'AI Healer sẵn sàng lắng nghe.'
@@ -62,15 +64,24 @@ export default function Messages() {
           let role = 'ai'
 
           if (c.status === 'waiting') {
-            name = 'Đang tìm người đồng hành...'
-            lastMsg = 'Đang đợi Bác sĩ/Healer tiếp nhận...'
-            isBot = false
-            color = 'from-bark-light/20 to-bark-light/40'
+            if (staffQueueIds.includes(c.id)) {
+              name = 'Đang tìm người đồng hành...'
+              lastMsg = 'Hệ thống đang xếp hàng chờ cho cậu...'
+              isBot = false
+              color = 'from-bark-light/20 to-bark-light/40'
+              role = 'healer'
+            } else {
+              name = 'An Nhiên AI'
+              lastMsg = 'AI luôn ở đây lắng nghe cậu.'
+              isBot = true
+              color = 'from-sage to-sage-dark'
+              role = 'ai'
+            }
           } else if (c.status === 'active' && c.healerId) {
-            name = 'Chuyên gia An Nhiên' // Hoặc lấy tên từ backend
+            name = 'Chuyên gia An Nhiên' 
             lastMsg = 'Chuyên gia đã kết nối.'
             isBot = false
-            role = 'healer' // Hoặc 'doctor'
+            role = 'healer' 
             color = 'from-lavender to-sage'
           }
 
@@ -89,7 +100,22 @@ export default function Messages() {
           }
         })
         setChatList(formatted)
-        if (formatted.length > 0 && !activeId) setActiveId(formatted[0].id)
+
+        // Handle URL params once we have the data
+        const mode = searchParams.get('mode')
+        const connect = searchParams.get('connect')
+        
+        if (connect === 'doctor') {
+          connectToStaff('doctor')
+          setSearchParams({}, { replace: true })
+          return // connectToStaff will handle setActiveId
+        } else if (mode === 'ai') {
+          const aiConvo = formatted.find(c => c.isBot)
+          if (aiConvo) setActiveId(aiConvo.id)
+          setSearchParams({}, { replace: true })
+        } else if (formatted.length > 0 && !activeId) {
+          setActiveId(formatted[0].id)
+        }
       } catch (err) {
         console.error(err)
       } finally {
@@ -120,12 +146,17 @@ export default function Messages() {
       }
     }
     fetchMessages()
+    const interval = setInterval(fetchMessages, 3000)
+    return () => clearInterval(interval)
   }, [activeId])
 
   const connectToStaff = useCallback(async (role) => {
     try {
       const newConvo = await apiFetch('/api/conversations', { method: 'POST' })
       const id = newConvo.id
+      
+      const staffQueueIds = JSON.parse(localStorage.getItem('staff_queue_ids') || '[]')
+      localStorage.setItem('staff_queue_ids', JSON.stringify([...staffQueueIds, id]))
       
       const nextChat = {
         id,
@@ -148,19 +179,8 @@ export default function Messages() {
     }
   }, [])
 
-  useEffect(() => {
-    const mode = searchParams.get('mode')
-    const connect = searchParams.get('connect')
-    if (connect === 'doctor') {
-      connectToStaff('doctor')
-      setSearchParams({}, { replace: true })
-      return
-    }
-    if (mode === 'ai' && aiConversation) {
-      setActiveId(aiConversation.id)
-      setSearchParams({}, { replace: true })
-    }
-  }, [connectToStaff, searchParams, setSearchParams])
+  // Removed buggy useEffect since URL logic is now handled in initializeChat
+  // URL params are processed there to guarantee chatList is loaded first.
 
   const filteredConversations = useMemo(
     () => chatList.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase())),
@@ -169,9 +189,10 @@ export default function Messages() {
   const activeChat = chatList.find((chat) => chat.id === activeId) || chatList[0]
   const messages = activeChat ? (localMessages[activeChat.id] || []) : []
 
-  const handleSend = async () => {
-    if (!inputValue.trim() || !activeChat) return
-    const userText = inputValue.trim()
+  const handleSend = async (overrideText = null) => {
+    const textToSend = typeof overrideText === 'string' ? overrideText : inputValue
+    if (!textToSend.trim() || !activeChat) return
+    const userText = textToSend.trim()
     setInputValue('')
     
     const tempId = Date.now().toString()
@@ -196,7 +217,7 @@ export default function Messages() {
           conversationId: activeChat.id,
           content: userText,
           requestAiReply: Boolean(activeChat.isBot),
-          personaId: 'healer'
+          personaId: 'ai_annhien'
         })
       })
 
@@ -214,6 +235,7 @@ export default function Messages() {
       }
     } catch (err) {
       console.error(err)
+      alert('Lỗi gửi tin nhắn: ' + (err.message || 'Không rõ'))
     } finally {
       setIsAiLoading(false)
     }
@@ -221,12 +243,7 @@ export default function Messages() {
 
   const continueWithAi = async () => {
     if (!activeChat?.isBot) return
-    setInputValue('Mình muốn tiếp tục trò chuyện với AI')
-    // A trick to trigger handleSend in next tick
-    setTimeout(() => {
-      const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' })
-      document.dispatchEvent(enterEvent)
-    }, 50)
+    handleSend('Mình muốn tiếp tục trò chuyện với AI')
   }
 
   return (

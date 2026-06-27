@@ -90,13 +90,38 @@ export default function StaffWorkspace({ role }) {
     navigate('/portal', { replace: true })
   }
 
-  const claimNextCase = async () => {
-    if (role !== 'healer' || queue.length === 0) return
+  const claimCase = async (id) => {
+    if (!id) return
     try {
-      const nextCase = queue[0]
-      await apiFetch(`/api/conversations/${nextCase.conversationId}/accept`, { method: 'PATCH' })
-      setQueue((items) => items.slice(1))
-      setActiveCaseId(nextCase.conversationId)
+      await apiFetch(`/api/conversations/${id}/accept`, { method: 'PATCH' })
+      setQueue((items) => items.filter(i => i.conversationId !== id))
+      setActiveCaseId(id)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const claimNextCase = () => {
+    if (queue.length > 0) claimCase(queue[0].conversationId)
+  }
+
+  const transferCase = async () => {
+    if (!activeCaseId) return
+    try {
+      await apiFetch(`/api/conversations/${activeCaseId}/transfer`, { method: 'PATCH' })
+      setActiveCaseId(null)
+      alert('Đã chuyển ca này cho Bác sĩ (ca đã được đưa lại vào hàng chờ ưu tiên).')
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const closeCase = async () => {
+    if (!activeCaseId) return
+    try {
+      await apiFetch(`/api/conversations/${activeCaseId}/close`, { method: 'PATCH' })
+      setActiveCaseId(null)
+      alert('Đã đóng ca thành công.')
     } catch (err) {
       console.error(err)
     }
@@ -147,7 +172,7 @@ export default function StaffWorkspace({ role }) {
               <option value="offline">Offline</option>
             </select>
             <button
-              onClick={role === 'healer' ? claimNextCase : undefined}
+              onClick={claimNextCase}
               className="inline-flex h-11 items-center gap-2 rounded-full bg-sage px-4 text-sm font-bold text-white shadow-lg shadow-sage/20"
             >
               <FontAwesomeIcon icon={role === 'doctor' ? faUpload : faComments} className="text-xs" />
@@ -192,7 +217,7 @@ export default function StaffWorkspace({ role }) {
               {queue.map((item) => (
                 <button 
                   key={item.conversationId} 
-                  onClick={() => claimNextCase()} // Chỉ là demo nếu có nhiều ca, hàm claimNextCase hiện tại lấy ca đầu tiên
+                  onClick={() => claimCase(item.conversationId)}
                   className="grid gap-3 rounded-2xl border border-bark-light/6 bg-white/55 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 md:grid-cols-[150px_minmax(0,1fr)_210px] md:items-center"
                 >
                   <div>
@@ -277,11 +302,11 @@ export default function StaffWorkspace({ role }) {
               <section className="rounded-3xl border border-white/70 bg-white/58 p-5 shadow-sm shadow-sage/5">
                 <h2 className="text-xl font-bold tracking-tight text-bark">Khung ca đang mở</h2>
                 <p className="mt-2 text-sm leading-6 text-bark-light/58">
-                  Healer có thể nhận ca kế tiếp, ghi nhận insight và chuyển bác sĩ khi cần. Phần này là UI shell, chưa gọi backend.
+                  Healer có thể nhận ca kế tiếp, ghi nhận insight và chuyển bác sĩ khi cần.
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button className="h-11 rounded-full bg-sage text-sm font-bold text-white">Chuyển bác sĩ</button>
-                  <button className="h-11 rounded-full border border-bark-light/8 bg-white text-sm font-bold text-bark-light/58">Đóng ca</button>
+                  <button onClick={transferCase} className="h-11 rounded-full bg-sage text-sm font-bold text-white transition active:scale-95">Chuyển bác sĩ</button>
+                  <button onClick={closeCase} className="h-11 rounded-full border border-bark-light/8 bg-white text-sm font-bold text-bark-light/58 transition active:scale-95">Đóng ca</button>
                 </div>
               </section>
             )}

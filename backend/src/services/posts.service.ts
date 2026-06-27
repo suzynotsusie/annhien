@@ -51,7 +51,7 @@ export async function listPublicPosts(query: ListPostsQuery) {
     }
 
     return {
-      posts: ((data ?? []) as DbPost[]).map(mapPost),
+      posts: ((data ?? []) as DbPost[]).map(mapPostWithStatus),
       total: count ?? 0,
       hasMore: offset + limit < (count ?? 0),
     };
@@ -62,7 +62,7 @@ export async function listPublicPosts(query: ListPostsQuery) {
     .sort((left, right) => right.created_at.localeCompare(left.created_at));
 
   return {
-    posts: rows.slice(offset, offset + limit).map(mapPost),
+    posts: rows.slice(offset, offset + limit).map(mapPostWithStatus),
     total: rows.length,
     hasMore: offset + limit < rows.length,
   };

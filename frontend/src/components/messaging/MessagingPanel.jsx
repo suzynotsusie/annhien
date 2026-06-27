@@ -74,6 +74,8 @@ export default function MessagingPanel({ isOpen, isClosing, onClose, activeId })
       }
     }
     fetchMessages()
+    const interval = setInterval(fetchMessages, 3000)
+    return () => clearInterval(interval)
   }, [activeChat])
 
   if (!isOpen && !isClosing) return null

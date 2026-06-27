@@ -47,9 +47,10 @@ export default function SOSModal({ open, message, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-bark/35 px-4 py-6 backdrop-blur-sm">
-      <section
-        role="dialog"
+    <div className="fixed inset-0 z-[80] overflow-y-auto bg-bark/35 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center p-4 py-8">
+        <section
+          role="dialog"
         aria-modal="true"
         aria-labelledby="sos-title"
         className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-red-200/80 bg-[#fff7f5] shadow-2xl shadow-red-950/15"
@@ -137,6 +138,7 @@ export default function SOSModal({ open, message, onClose }) {
           </div>
         </div>
       </section>
+      </div>
     </div>
   )
 }

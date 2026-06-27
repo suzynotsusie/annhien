@@ -47,8 +47,12 @@ export function mapPostWithStatus(row: DbPost) {
 
 export function mapConversation(row: DbConversation) {
   return {
+    id: row.id,
     conversationId: row.id,
+    userId: row.user_id,
+    healerId: row.healer_id,
     status: row.status,
+    aiInsights: row.ai_insights,
     createdAt: row.created_at,
   };
 }
