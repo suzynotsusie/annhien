@@ -99,22 +99,37 @@ export default function Messages() {
             unread: 0,
           }
         })
-        setChatList(formatted)
+        
+        const uniqueChats = []
+        const seenRoles = new Set()
+        for (const chat of formatted) {
+          if (!seenRoles.has(chat.role)) {
+            uniqueChats.push(chat)
+            seenRoles.add(chat.role)
+          }
+        }
+        
+        setChatList(uniqueChats)
 
         // Handle URL params once we have the data
         const mode = searchParams.get('mode')
         const connect = searchParams.get('connect')
         
         if (connect === 'doctor') {
-          connectToStaff('doctor')
+          const existing = uniqueChats.find(c => c.role === 'doctor' && c.status !== 'closed')
+          if (existing) {
+            setActiveId(existing.id)
+          } else {
+            connectToStaff('doctor')
+          }
           setSearchParams({}, { replace: true })
-          return // connectToStaff will handle setActiveId
+          return // connectToStaff or setActiveId will handle the rest
         } else if (mode === 'ai') {
-          const aiConvo = formatted.find(c => c.isBot)
+          const aiConvo = uniqueChats.find(c => c.isBot)
           if (aiConvo) setActiveId(aiConvo.id)
           setSearchParams({}, { replace: true })
-        } else if (formatted.length > 0 && !activeId) {
-          setActiveId(formatted[0].id)
+        } else if (uniqueChats.length > 0 && !activeId) {
+          setActiveId(uniqueChats[0].id)
         }
       } catch (err) {
         console.error(err)
@@ -134,7 +149,7 @@ export default function Messages() {
     const fetchMessages = async () => {
       try {
         const res = await apiFetch(`/api/messages/${activeId}?limit=50`)
-        const msgs = (res?.messages || []).reverse().map(m => ({
+        const msgs = (res?.messages || []).map(m => ({
           id: m.id,
           sender: m.senderRole === 'user' ? 'me' : 'them',
           text: m.content,
@@ -152,6 +167,12 @@ export default function Messages() {
 
   const connectToStaff = useCallback(async (role) => {
     try {
+      const existing = chatList.find(c => c.role === role && c.status !== 'closed')
+      if (existing) {
+        setActiveId(existing.id)
+        return
+      }
+
       const newConvo = await apiFetch('/api/conversations', { method: 'POST' })
       const id = newConvo.id
       
@@ -177,7 +198,7 @@ export default function Messages() {
     } catch (err) {
       console.error(err)
     }
-  }, [])
+  }, [chatList])
 
   // Removed buggy useEffect since URL logic is now handled in initializeChat
   // URL params are processed there to guarantee chatList is loaded first.
