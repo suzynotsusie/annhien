@@ -120,9 +120,12 @@ test('verifyToken rejects missing token with contract error shape', () => {
 
   assert.equal(nextCalled, false);
   assert.equal(res.statusCode, 401);
-  assert.deepEqual(res.body, {
-    message: 'Chua dang nhap',
+  assert.equal(res.body.message, 'Chua dang nhap');
+  assert.equal(res.body.code, 'UNAUTHORIZED');
+  assert.equal(res.body.success, false);
+  assert.deepEqual(res.body.error, {
     code: 'UNAUTHORIZED',
+    message: 'Chua dang nhap',
   });
 });
 

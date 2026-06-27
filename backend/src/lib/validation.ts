@@ -1,5 +1,5 @@
-import { MOODS, POST_STATUSES, REACTIONS, TOPICS, USER_ROLES } from './constants';
-import type { Mood, PostStatus, ReactionType, Topic, UserRole } from '../types/domain';
+import { MOODS, POST_STATUSES, REACTIONS, TOPICS, USER_ROLES, USER_STATUSES, VIDEO_STATUSES } from './constants';
+import type { Mood, PostStatus, ReactionType, Topic, UserRole, UserStatus, VideoStatus } from '../types/domain';
 
 export function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -24,6 +24,14 @@ export function asReaction(value: unknown): ReactionType | null {
 
 export function asPostStatus(value: unknown): PostStatus | null {
   return typeof value === 'string' && POST_STATUSES.includes(value as PostStatus) ? (value as PostStatus) : null;
+}
+
+export function asUserStatus(value: unknown): UserStatus | null {
+  return typeof value === 'string' && USER_STATUSES.includes(value as UserStatus) ? (value as UserStatus) : null;
+}
+
+export function asVideoStatus(value: unknown): VideoStatus | null {
+  return typeof value === 'string' && VIDEO_STATUSES.includes(value as VideoStatus) ? (value as VideoStatus) : null;
 }
 
 export function sanitizeTopics(value: unknown): string[] | null {

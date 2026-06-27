@@ -55,6 +55,7 @@ async function requestJson(baseUrl, pathName, options = {}) {
 test('API smoke and negative contract checks', async (t) => {
   const port = await getFreePort();
   const baseUrl = `http://127.0.0.1:${port}`;
+  let userToken = '';
   const child = spawn('node', ['dist/index.js'], {
     cwd: backendRoot,
     env: {
@@ -113,10 +114,35 @@ test('API smoke and negative contract checks', async (t) => {
     assert.equal(body.code, 'INVALID_NICKNAME');
   });
 
+  await t.test('auth setup creates a local anonymous account when Supabase is not configured', async () => {
+    const { response, body } = await requestJson(baseUrl, '/api/auth/setup', {
+      method: 'POST',
+      body: JSON.stringify({ nickname: 'Nguoi Ban', topics: ['study'], role: 'user' }),
+    });
+    assert.equal(response.status, 201);
+    assert.ok(body.userId);
+    assert.ok(body.token);
+    userToken = body.token;
+  });
+
   await t.test('posts topic filter rejects unsupported topic before database access', async () => {
     const { response, body } = await requestJson(baseUrl, '/api/posts?topic=bad-topic');
     assert.equal(response.status, 400);
     assert.equal(body.code, 'INVALID_TOPIC');
+  });
+
+  await t.test('post creation returns standardized zod error JSON for invalid content', async () => {
+    const { response, body } = await requestJson(baseUrl, '/api/posts', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${userToken}`,
+      },
+      body: JSON.stringify({ content: '', topic: 'daily' }),
+    });
+    assert.equal(response.status, 400);
+    assert.equal(body.code, 'INVALID_CONTENT');
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, 'INVALID_CONTENT');
   });
 
   await t.test('message route rejects missing token before body/database work', async () => {

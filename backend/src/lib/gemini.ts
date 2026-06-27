@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI, type GenerationConfig } from '@google/generative-ai';
 
 const geminiApiKey = process.env.GEMINI_API_KEY || '';
+export const hasGeminiApiKey = Boolean(geminiApiKey);
 
-if (!geminiApiKey) {
+if (!hasGeminiApiKey) {
   console.warn('Thieu GEMINI_API_KEY trong .env');
 }
 

@@ -39,6 +39,16 @@ test('backend mounts all API route groups required by api-contract.md', () => {
   }
 });
 
+test('step 2.1 enterprise folders exist in backend/src', () => {
+  const requiredDirs = ['controllers', 'services', 'middlewares', 'routes', 'validations', 'utils'];
+
+  for (const dir of requiredDirs) {
+    const fullPath = path.join(srcRoot, dir);
+    assert.ok(fs.existsSync(fullPath), `${dir} directory is missing`);
+    assert.ok(fs.statSync(fullPath).isDirectory(), `${dir} is not a directory`);
+  }
+});
+
 test('chat backend remains text-only and has no upload/media handlers', () => {
   const forbiddenPatterns = [
     /\bupload\b/i,
@@ -64,4 +74,8 @@ test('package exposes repeatable test scripts', () => {
   assert.ok(pkg.scripts['test:unit']);
   assert.ok(pkg.scripts['test:api']);
   assert.ok(pkg.scripts['test:contract']);
+  assert.ok(pkg.dependencies.zod);
+  assert.ok(pkg.dependencies['crypto-js']);
+  assert.ok(pkg.dependencies.bcryptjs);
+  assert.ok(pkg.dependencies['express-async-errors']);
 });
