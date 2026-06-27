@@ -58,3 +58,4 @@ logs/
 .eslintcache
 .cache/
 .turbo/
+backend/.env
