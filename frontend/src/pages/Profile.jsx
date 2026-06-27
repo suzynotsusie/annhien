@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowRightFromBracket,
@@ -11,15 +11,31 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate } from 'react-router-dom'
 import { clearSession, readSession } from '../lib/auth'
-import { decryptClientSide, readJournals } from '../lib/clientSafety'
+import { decryptClientSide } from '../lib/crypto'
+import { apiFetch } from '../lib/api-client'
 import { moodOptions, staffProfiles } from '../lib/mockData'
 
 export default function Profile() {
   const navigate = useNavigate()
   const session = readSession()
   const [report, setReport] = useState('')
-  const journals = readJournals()
+  const [journals, setJournals] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const profileAsset = staffProfiles.users[0]
+
+  useEffect(() => {
+    const loadJournals = async () => {
+      try {
+        const payload = await apiFetch('/api/journals/me?limit=30')
+        setJournals(Array.isArray(payload?.journals) ? payload.journals : [])
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadJournals()
+  }, [])
 
   const moodStats = useMemo(() => {
     const total = Math.max(1, journals.length)
@@ -29,17 +45,25 @@ export default function Profile() {
     })
   }, [journals])
 
-  const createReport = () => {
+  const createReport = async () => {
     if (journals.length < 3) {
       setReport('Cậu cần thêm ít nhất 3 dòng nhật ký để báo cáo có ý nghĩa hơn. Hôm nay chỉ cần viết một đoạn ngắn cũng được.')
       return
     }
 
-    const latest = journals.slice(0, 3).map((journal) => decryptClientSide(journal.encryptedContent)).filter(Boolean)
-    const anxious = journals.filter((journal) => journal.mood === 'anxious' || journal.mood === 'tired').length
-    setReport(
-      `Trong ${journals.length} lần check-in gần đây, cậu đã quay lại với bản thân khá đều. Có ${anxious} lần cảm xúc nặng hơn, nhưng việc cậu vẫn viết xuống cho thấy cậu đang tìm cách chăm sóc mình. Tuần này, thử giữ một thói quen nhỏ: viết 3 dòng trước khi ngủ và chọn một bài thở ở Trạm chữa lành. Điều cậu viết gần đây nhất: "${latest[0] || 'một điều riêng tư'}".`,
-    )
+    setReport('Đang kết nối AI để phân tích dữ liệu cảm xúc...')
+    try {
+      const top3 = journals.slice(0, 3)
+      const details = await Promise.all(top3.map(j => apiFetch('/api/journals/' + j.id).catch(() => null)))
+      
+      const latest = details.map(d => d ? decryptClientSide(d.encryptedContent || d.encrypted_content || '') : '').filter(Boolean)
+      const anxious = journals.filter((journal) => journal.mood === 'anxious' || journal.mood === 'tired').length
+      setReport(
+        `Trong ${journals.length} lần check-in gần đây, cậu đã quay lại với bản thân khá đều. Có ${anxious} lần cảm xúc nặng hơn, nhưng việc cậu vẫn viết xuống cho thấy cậu đang tìm cách chăm sóc mình. Tuần này, thử giữ một thói quen nhỏ: viết 3 dòng trước khi ngủ và chọn một bài thở ở Trạm chữa lành. Điều cậu viết gần đây nhất: "${latest[0] || 'một điều riêng tư'}".`,
+      )
+    } catch {
+      setReport('Đã có lỗi xảy ra khi tạo báo cáo. Vui lòng thử lại sau.')
+    }
   }
 
   const logout = () => {

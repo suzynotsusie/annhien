@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { createVideoController, listVideosController } from '../controllers/videos.controller';
+import { createVideoController, listVideosController, listPendingVideosController, updateVideoStatusController } from '../controllers/videos.controller';
 import { requireRole, verifyToken } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
-import { createVideoBodySchema, listVideosQuerySchema } from '../validations/videos.validation';
+import { createVideoBodySchema, listVideosQuerySchema, updateVideoStatusBodySchema } from '../validations/videos.validation';
+import { entityIdParamSchema } from '../validations/shared.validation';
 
 const router = Router();
 

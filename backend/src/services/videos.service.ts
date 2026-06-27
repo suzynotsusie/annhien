@@ -5,6 +5,51 @@ import { ApiError } from '../utils/app-error';
 import type { DbUser, DbVideo } from '../types/domain';
 import type { CreateVideoBody, ListVideosQuery } from '../validations/videos.validation';
 
+export async function listPendingVideos() {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('videos')
+      .select('id,doctor_id,title,topic,video_url,description,status,likes,saved,created_at')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new ApiError(500, error.message, 'SUPABASE_SELECT_FAILED');
+    }
+    const videos = (data ?? []) as DbVideo[];
+    const doctorNameById = await buildSupabaseDoctorNameMap(videos);
+    return { videos: videos.map((v) => mapVideo(v, v.doctor_id ? doctorNameById.get(v.doctor_id) ?? null : null)) };
+  }
+
+  const doctorNameById = new Map(localStore.users.map((u) => [u.id, u.nickname]));
+  const videos = localStore.videos
+    .filter((v) => v.status === 'pending')
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+  return { videos: videos.map((v) => mapVideo(v, v.doctor_id ? doctorNameById.get(v.doctor_id) ?? null : null)) };
+}
+
+export async function updateVideoStatus(videoId: string, status: 'approved' | 'rejected') {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('videos')
+      .update({ status })
+      .eq('id', videoId)
+      .select('id,status')
+      .single();
+
+    if (error || !data) {
+      throw new ApiError(500, error?.message || 'Khong the cap nhat video', 'SUPABASE_UPDATE_FAILED');
+    }
+    return data;
+  }
+
+  const video = localStore.videos.find((v) => v.id === videoId);
+  if (!video) throw new ApiError(404, 'Khong tim thay video', 'VIDEO_NOT_FOUND');
+  video.status = status;
+  return { id: video.id, status: video.status };
+}
+
 /**
  * @param query Validated video list query.
  * @returns Approved videos in API shape.

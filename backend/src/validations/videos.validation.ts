@@ -14,5 +14,10 @@ export const createVideoBodySchema = z.object({
   description: z.string().trim().max(500).optional().or(z.literal('')),
 });
 
+export const updateVideoStatusBodySchema = z.object({
+  status: z.enum(['approved', 'rejected']),
+});
+
 export type ListVideosQuery = z.infer<typeof listVideosQuerySchema>;
 export type CreateVideoBody = z.infer<typeof createVideoBodySchema>;
+export type UpdateVideoStatusBody = z.infer<typeof updateVideoStatusBodySchema>;

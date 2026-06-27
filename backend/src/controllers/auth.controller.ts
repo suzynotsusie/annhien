@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { AuthenticatedRequest } from '../middlewares/auth';
-import { getCurrentUser, loginStaffUser, setupAnonymousUser, updateCurrentUserStatus } from '../services/auth.service';
-import type { AuthLoginBody, AuthSetupBody, AuthStatusBody } from '../validations/auth.validation';
+import { getCurrentUser, loginStaffUser, setupAnonymousUser, updateCurrentUserStatus, registerUser } from '../services/auth.service';
+import type { AuthLoginBody, AuthSetupBody, AuthStatusBody, AuthRegisterBody } from '../validations/auth.validation';
 
 /**
  * @param req Incoming setup request.
@@ -10,6 +10,11 @@ import type { AuthLoginBody, AuthSetupBody, AuthStatusBody } from '../validation
  */
 export async function setupAuthController(req: Request, res: Response) {
   const payload = await setupAnonymousUser(req.body as AuthSetupBody);
+  return res.status(201).json(payload);
+}
+
+export async function registerAuthController(req: Request, res: Response) {
+  const payload = await registerUser(req.body as AuthRegisterBody);
   return res.status(201).json(payload);
 }
 

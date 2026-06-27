@@ -4,6 +4,7 @@ import {
   loginAuthController,
   setupAuthController,
   updateStatusController,
+  registerAuthController,
 } from '../controllers/auth.controller';
 import { requireRole, verifyToken } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
@@ -11,6 +12,7 @@ import {
   authLoginBodySchema,
   authSetupBodySchema,
   authStatusBodySchema,
+  authRegisterBodySchema,
 } from '../validations/auth.validation';
 
 const router = Router();
@@ -32,6 +34,19 @@ router.post(
   ),
   setupAuthController
 );
+
+router.post(
+  '/register',
+  validate(
+    { body: authRegisterBodySchema },
+    {
+      code: 'INVALID_REGISTER_PAYLOAD',
+      message: 'Thong tin dang ky khong hop le',
+    }
+  ),
+  registerAuthController
+);
+
 router.post(
   '/login',
   validate(

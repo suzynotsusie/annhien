@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -7,15 +7,33 @@ import {
   faPlay,
   faVolumeHigh,
 } from '@fortawesome/free-solid-svg-icons'
-import { communityTopics, healingVideos, topicLabels } from '../lib/mockData'
+import { communityTopics, topicLabels } from '../lib/mockData'
+import { API_URL } from '../lib/auth'
 
 export default function HealingStation() {
   const [activeTopic, setActiveTopic] = useState('all')
   const [likedIds, setLikedIds] = useState([])
+  const [videos, setVideos] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const videos = useMemo(() => (
-    healingVideos.filter((video) => activeTopic === 'all' || video.topic === activeTopic)
-  ), [activeTopic])
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        setIsLoading(true)
+        const query = activeTopic === 'all' ? '' : `?topic=${activeTopic}`
+        const res = await fetch(`${API_URL}/api/videos${query}`)
+        const data = await res.json()
+        if (data.videos) {
+          setVideos(data.videos)
+        }
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchVideos()
+  }, [activeTopic])
 
   const toggleLike = (id) => {
     setLikedIds((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])
@@ -58,10 +76,15 @@ export default function HealingStation() {
                   <div className="relative mx-auto aspect-[9/16] max-h-[78dvh] w-full max-w-[440px] overflow-hidden rounded-[30px] bg-bark shadow-2xl shadow-sage/16">
                     <video
                       className="h-full w-full object-cover"
-                      controls
+                      autoPlay
+                      muted
                       loop
                       playsInline
                       preload="metadata"
+                      onClick={(e) => {
+                        if (e.target.paused) e.target.play()
+                        else e.target.pause()
+                      }}
                     >
                       <source src={video.videoUrl} type="video/mp4" />
                     </video>
@@ -69,7 +92,7 @@ export default function HealingStation() {
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-bark/82 via-bark/30 to-transparent px-5 pb-5 pt-28 text-white">
                       <div className="mb-3 flex items-center gap-3">
                         <img
-                          src={video.doctorAvatar}
+                          src={video.doctorAvatar || '/assets/doctors/dr_lanhuong.png'}
                           alt={video.doctorName}
                           className="h-11 w-11 rounded-2xl border border-white/40 object-cover"
                         />

@@ -24,7 +24,7 @@ export default function Admin() {
   const [pendingVideos, setPendingVideos] = useState(() => readPendingVideos(pendingVideoSeed))
 
   if (session.role !== 'admin') {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/portal" replace />
   }
 
   const approvePost = (post) => {

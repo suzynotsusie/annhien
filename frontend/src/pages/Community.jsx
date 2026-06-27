@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faComment,
@@ -10,6 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import SOSModal from '../components/ui/SOSModal'
 import { communitySeed, communityTopics, topicLabels } from '../lib/mockData'
+import { API_URL, readSession } from '../lib/auth'
 import {
   detectBlockedContent,
   detectRisk,
@@ -50,6 +51,24 @@ export default function Community() {
   const [openComments, setOpenComments] = useState({})
   const [commentDrafts, setCommentDrafts] = useState({})
 
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const { token } = readSession()
+        const res = await fetch(`${API_URL}/api/posts`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+        const data = await res.json()
+        if (data.posts) {
+          setPosts(data.posts.map(normalizePost))
+        }
+      } catch (e) {
+        console.error('Failed to fetch posts:', e)
+      }
+    }
+    fetchPosts()
+  }, [])
+
   const visiblePosts = useMemo(() => {
     return posts.filter((post) => ['public', 'flagged'].includes(post.status) && (activeTopic === 'all' || post.topic === activeTopic))
   }, [activeTopic, posts])
@@ -59,49 +78,45 @@ export default function Community() {
     saveCommunityPosts(nextPosts)
   }
 
-  const submitPost = (event) => {
+  const submitPost = async (event) => {
     event.preventDefault()
     const trimmed = content.trim()
     if (!trimmed) return
 
-    const risk = detectRisk(trimmed)
-    const isKeywordFlagged = detectBlockedContent(trimmed)
-    const shouldFlag = risk.triggerSOS || isKeywordFlagged
-    const reason = risk.triggerSOS
-      ? 'Từ khóa rủi ro cao, cần admin xem kỹ trước khi công khai.'
-      : isKeywordFlagged
-        ? 'Dính bộ lọc từ khóa cộng đồng, chỉ người đăng thấy trong lúc chờ duyệt.'
-        : ''
-    const nextPost = {
-      id: `post-${Date.now()}`,
-      content: trimmed,
-      topic,
-      authorLabel: 'Ẩn danh',
-      roleBadge: null,
-      reactions: { like: 0, love: 0, care: 0, peace: 0 },
-      userReaction: null,
-      comments: [],
-      createdAt: new Date().toISOString(),
-      status: shouldFlag ? 'flagged' : 'public',
-      reason,
-    }
-
-    if (shouldFlag) {
-      const flagged = [nextPost, ...readFlaggedPosts([])]
-      saveFlaggedPosts(flagged)
-      persistPosts([nextPost, ...posts])
-      if (risk.triggerSOS) setSos({ open: true, message: risk.suggestedResponse })
-      setNotice(
-        risk.triggerSOS
-          ? 'Bài viết đã được giữ riêng để admin xem xét. SOS đã mở để cậu có hỗ trợ ngay.'
-          : 'Bài viết đang chờ admin duyệt. Hiện chỉ mình cậu thấy bài này.',
-      )
-    } else {
-      persistPosts([nextPost, ...posts])
-      setNotice('Đã đăng ẩn danh lên cộng đồng.')
+    try {
+      const { token } = readSession()
+      const res = await fetch(`${API_URL}/api/posts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ content: trimmed, topic, isAnonymous: true })
+      })
+      const data = await res.json()
+      
+      if (data.post) {
+        const nextPost = normalizePost(data.post)
+        setPosts(prev => [nextPost, ...prev])
+        
+        if (data.post.sosTriggered) {
+          setSos({ open: true, message: data.post.sosMessage || 'Nếu bạn cần giúp đỡ, hãy gọi đường dây nóng.' })
+          setNotice('Bài viết đã được giữ riêng để admin xem xét. SOS đã mở để cậu có hỗ trợ ngay.')
+        } else if (data.post.status === 'flagged') {
+          setNotice('Bài viết đang chờ admin duyệt do nghi ngờ vi phạm. Hiện chỉ mình cậu thấy bài này.')
+        } else if (data.post.status === 'blocked') {
+          setNotice('Bài viết bị chặn do vi phạm tiêu chuẩn cộng đồng.')
+        } else {
+          setNotice('Đăng bài thành công!')
+        }
+      }
+    } catch (e) {
+      console.error('Failed to submit post:', e)
+      setNotice('Có lỗi xảy ra khi đăng bài. Vui lòng thử lại.')
     }
 
     setContent('')
+    setTimeout(() => setNotice(''), 4000)
   }
 
   const reactToPost = (postId, reactionId) => {

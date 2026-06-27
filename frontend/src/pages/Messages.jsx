@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -9,9 +9,9 @@ import {
   faUserDoctor,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import { conversations, staffProfiles } from '../lib/mockData'
-
-const aiConversation = conversations.find((chat) => chat.isBot) || conversations[0]
+import { staffProfiles } from '../lib/mockData'
+import { apiFetch } from '../lib/api-client'
+import { API_URL, readSession } from '../lib/auth'
 
 function initialsFromName(name) {
   return name
@@ -25,41 +25,103 @@ function initialsFromName(name) {
 
 export default function Messages() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [chatList, setChatList] = useState(() => (aiConversation ? [aiConversation] : []))
-  const [activeId, setActiveId] = useState(aiConversation?.id)
+  const [chatList, setChatList] = useState([])
+  const [activeId, setActiveId] = useState(null)
   const [inputValue, setInputValue] = useState('')
   const [localMessages, setLocalMessages] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [isAiLoading, setIsAiLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const messagesEndRef = useRef(null)
 
-  const connectToStaff = useCallback((role) => {
-    const pool = role === 'doctor' ? staffProfiles.doctors : staffProfiles.healers
-    const person = pool[Math.floor(Math.random() * pool.length)]
-    const id = `${role}-${Date.now()}`
-    const nextChat = {
-      id,
-      name: person.name,
-      initials: initialsFromName(person.name),
-      color: role === 'doctor' ? 'from-lavender to-sage' : 'from-sage to-sage-dark',
-      online: true,
-      role,
-      lastMsg: role === 'doctor' ? 'Bác sĩ đã sẵn sàng xem câu chuyện của cậu.' : 'Healer đã được kết nối qua An Nhiên AI.',
-      time: 'Bây giờ',
-      unread: 0,
-      messages: [
-        {
-          id: `${id}-hello`,
-          sender: 'them',
-          text:
-            role === 'doctor'
-              ? `Chào cậu, mình là ${person.name}. Cậu có thể nói điều đang cần hỗ trợ chuyên môn, mình sẽ đi chậm cùng cậu.`
-              : `An Nhiên đã kết nối cậu với ${person.name}. Cậu cứ bắt đầu bằng một câu ngắn thôi cũng được.`,
-          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ],
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [localMessages, isAiLoading, activeId])
+
+  useEffect(() => {
+    const initializeChat = async () => {
+      try {
+        setIsLoading(true)
+        const payload = await apiFetch('/api/conversations/me')
+        let convos = payload?.conversations || []
+        
+        if (convos.length === 0) {
+          const newConvo = await apiFetch('/api/conversations', { method: 'POST' })
+          if (newConvo) convos = [newConvo]
+        }
+
+        const formatted = convos.map(c => ({
+          id: c.id,
+          name: 'An Nhiên AI',
+          initials: 'AI',
+          color: 'from-sage to-sage-dark',
+          online: true,
+          role: 'ai',
+          isBot: true,
+          lastMsg: 'AI Healer sẵn sàng lắng nghe.',
+          time: new Date(c.createdAt || Date.now()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          unread: 0,
+        }))
+        setChatList(formatted)
+        if (formatted.length > 0) setActiveId(formatted[0].id)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
     }
+    initializeChat()
+  }, [])
 
-    setChatList((items) => [nextChat, ...items])
-    setActiveId(id)
+  useEffect(() => {
+    if (!activeId) return
+    const fetchMessages = async () => {
+      try {
+        const res = await apiFetch(`/api/messages/${activeId}?limit=50`)
+        const msgs = (res?.messages || []).reverse().map(m => ({
+          id: m.id,
+          sender: m.senderRole === 'user' ? 'me' : 'them',
+          text: m.content,
+          time: new Date(m.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        }))
+        setLocalMessages(prev => ({ ...prev, [activeId]: msgs }))
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchMessages()
+  }, [activeId])
+
+  const connectToStaff = useCallback(async (role) => {
+    try {
+      const newConvo = await apiFetch('/api/conversations', { method: 'POST' })
+      const id = newConvo.id
+      
+      const pool = role === 'doctor' ? staffProfiles.doctors : staffProfiles.healers
+      const person = pool[Math.floor(Math.random() * pool.length)]
+      const nextChat = {
+        id,
+        name: person.name,
+        initials: initialsFromName(person.name),
+        color: role === 'doctor' ? 'from-lavender to-sage' : 'from-sage to-sage-dark',
+        online: true,
+        role,
+        isBot: false,
+        lastMsg: role === 'doctor' ? 'Bác sĩ đã sẵn sàng xem câu chuyện của cậu.' : 'Healer đã được kết nối qua hệ thống.',
+        time: 'Bây giờ',
+        unread: 0,
+        messages: [],
+      }
+
+      setChatList((items) => [nextChat, ...items])
+      setActiveId(id)
+    } catch (err) {
+      console.error(err)
+    }
   }, [])
 
   useEffect(() => {
@@ -81,35 +143,56 @@ export default function Messages() {
     [chatList, searchQuery],
   )
   const activeChat = chatList.find((chat) => chat.id === activeId) || chatList[0]
-  const messages = activeChat ? [...activeChat.messages, ...(localMessages[activeChat.id] || [])] : []
+  const messages = activeChat ? (localMessages[activeChat.id] || []) : []
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim() || !activeChat) return
+    const userText = inputValue.trim()
+    setInputValue('')
+    
+    const tempId = Date.now().toString()
     const newMsg = {
-      id: Date.now(),
+      id: tempId,
       sender: 'me',
-      text: inputValue.trim(),
+      text: userText,
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     }
+    
     setLocalMessages((prev) => ({
       ...prev,
       [activeChat.id]: [...(prev[activeChat.id] || []), newMsg],
     }))
-    setInputValue('')
-  }
 
-  const continueWithAi = () => {
-    if (!activeChat?.isBot) return
-    const reply = {
-      id: Date.now(),
-      sender: 'them',
-      text: 'Được, mình sẽ ở lại cùng cậu. Cậu muốn kể điều đang nặng nhất lúc này, hay muốn mình gợi ý một bài thở trước?',
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    setIsAiLoading(true)
+    
+    try {
+      const res = await apiFetch(`/api/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
+          conversationId: activeChat.id,
+          content: userText,
+          requestAiReply: Boolean(activeChat.isBot),
+          personaId: 'healer'
+        })
+      })
+
+      if (res?.aiReply) {
+        const aiMsg = {
+          id: res.aiReply.id,
+          sender: 'them',
+          text: res.aiReply.content,
+          time: new Date(res.aiReply.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        }
+        setLocalMessages(prev => ({
+          ...prev,
+          [activeChat.id]: prev[activeChat.id].map(m => m.id === tempId ? { ...m, id: res.userMessage.id } : m).concat(aiMsg)
+        }))
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsAiLoading(false)
     }
-    setLocalMessages((prev) => ({
-      ...prev,
-      [activeChat.id]: [...(prev[activeChat.id] || []), reply],
-    }))
   }
 
   return (
@@ -258,6 +341,21 @@ export default function Messages() {
                       </div>
                     )
                   })}
+                  
+                  {isAiLoading && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[78%]">
+                        <div className="rounded-3xl rounded-bl-lg border border-bark-light/7 bg-white/75 px-5 py-4 text-bark shadow-sm">
+                          <div className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sage-dark/60"></span>
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sage-dark/60" style={{ animationDelay: '0.2s' }}></span>
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sage-dark/60" style={{ animationDelay: '0.4s' }}></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               </div>
 

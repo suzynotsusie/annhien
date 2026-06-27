@@ -13,6 +13,27 @@ function canAccessConversation(conversation: DbConversation, userId: string): bo
   return conversation.user_id === userId || conversation.healer_id === userId;
 }
 
+export async function listMyConversations(userId: string) {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('id,user_id,healer_id,status,ai_insights,created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new ApiError(500, error.message, 'SUPABASE_SELECT_FAILED');
+    }
+    return { conversations: ((data ?? []) as DbConversation[]).map(mapConversation) };
+  }
+
+  const rows = localStore.conversations
+    .filter((c) => c.user_id === userId)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+  return { conversations: rows.map(mapConversation) };
+}
+
 /**
  * @param userId Authenticated patient id.
  * @returns Newly created waiting conversation.

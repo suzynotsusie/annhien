@@ -6,7 +6,13 @@ import {
   createConversation,
   getConversationQueue,
   transferConversation,
+  listMyConversations,
 } from '../services/conversations.service';
+
+export async function listMyConversationsController(req: AuthenticatedRequest, res: Response) {
+  const payload = await listMyConversations(req.user!.userId);
+  return res.status(200).json(payload);
+}
 import type { ConversationIdRouteParams } from '../validations/conversations.validation';
 
 /**

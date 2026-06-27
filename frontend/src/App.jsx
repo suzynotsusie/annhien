@@ -4,6 +4,8 @@ import Home from './pages/Home'
 import Onboarding from './pages/Onboarding'
 import Messages from './pages/Messages'
 import Portal from './pages/Portal'
+import Login from './pages/Login'
+import Register from './pages/Register'
 import StaffWorkspace from './pages/StaffWorkspace'
 import Community from './pages/Community'
 import HealingStation from './pages/HealingStation'
@@ -50,7 +52,7 @@ function RequireOnboarding({ children }) {
 function RequireStaffRole({ role, children }) {
   const session = readSession()
   if (!session.token) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/portal" replace />
   }
   if (session.role !== role) {
     return <Navigate to={roleHome(session.role, session.onboarded)} replace />
@@ -65,7 +67,7 @@ export default function App() {
         path="/"
         element={
           <SkipIfAuthenticated>
-            <Portal />
+            <Login />
           </SkipIfAuthenticated>
         }
       />
@@ -74,17 +76,29 @@ export default function App() {
         path="/login"
         element={
           <SkipIfAuthenticated>
-            <Portal />
+            <Login />
+          </SkipIfAuthenticated>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <SkipIfAuthenticated>
+            <Register />
           </SkipIfAuthenticated>
         }
       />
       <Route
         path="/portal"
-        element={<Navigate to="/login" replace />}
+        element={
+          <SkipIfAuthenticated>
+            <Portal />
+          </SkipIfAuthenticated>
+        }
       />
       <Route
         path="/staff"
-        element={<Navigate to="/login" replace />}
+        element={<Navigate to="/portal" replace />}
       />
 
       <Route
