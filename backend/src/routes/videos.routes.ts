@@ -42,4 +42,31 @@ router.post(
   createVideoController
 );
 
+router.get(
+  '/pending',
+  verifyToken,
+  requireRole('admin', 'doctor'),
+  listPendingVideosController
+);
+
+router.patch(
+  '/:id/status',
+  verifyToken,
+  requireRole('admin'),
+  validate(
+    { params: entityIdParamSchema, body: updateVideoStatusBodySchema },
+    {
+      codeByPath: {
+        id: 'INVALID_VIDEO_ID',
+        status: 'INVALID_STATUS',
+      },
+      messageByPath: {
+        id: 'Video ID khong hop le',
+        status: 'Trang thai khong hop le',
+      },
+    }
+  ),
+  updateVideoStatusController
+);
+
 export default router;

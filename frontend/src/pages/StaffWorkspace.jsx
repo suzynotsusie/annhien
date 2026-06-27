@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -13,8 +13,9 @@ import {
   faUsers,
 } from '@fortawesome/free-solid-svg-icons'
 import { clearSession, readSession } from '../lib/auth'
-import { pendingVideoSeed, staffQueues, topicLabels } from '../lib/mockData'
-import { readPendingVideos, savePendingVideos } from '../lib/clientSafety'
+import { topicLabels } from '../lib/mockData'
+import { apiFetch } from '../lib/api-client'
+import MessagingPanel from '../components/messaging/MessagingPanel'
 
 const workspaceCopy = {
   doctor: {
@@ -30,11 +31,7 @@ const workspaceCopy = {
       { label: 'Tương tác tuần này', value: '1.8k', note: 'Lượt xem và lưu video', icon: faChartLine },
     ],
     queueTitle: 'Ca chuyên sâu',
-    queue: [
-      { name: 'Gió Nhẹ', topic: 'Áp lực thi cử kéo dài', status: 'Healer đề xuất chuyển tuyến' },
-      { name: 'Mây Nhỏ', topic: 'Mất ngủ 2 tuần', status: 'Cần đánh giá rủi ro' },
-      { name: 'Sao Đêm', topic: 'Lo âu xã hội', status: 'Theo dõi sau phiên chat' },
-    ],
+    queue: [],
   },
   healer: {
     eyebrow: 'Healer workspace',
@@ -49,11 +46,7 @@ const workspaceCopy = {
       { label: 'Tín hiệu ổn định', value: '76%', note: 'Dựa trên mood check-in', icon: faChartLine },
     ],
     queueTitle: 'Hàng chờ hôm nay',
-    queue: [
-      { name: 'Lá Non', topic: 'Cô đơn sau chuyển trường', status: 'Đang chờ kết nối' },
-      { name: 'Nắng Mai', topic: 'Kỳ vọng gia đình', status: 'Cần phản hồi trong 10 phút' },
-      { name: 'Gió Nhẹ', topic: 'Áp lực học tập', status: 'Đã có AI insight' },
-    ],
+    queue: [],
   },
 }
 
@@ -63,9 +56,24 @@ export default function StaffWorkspace({ role }) {
   const config = workspaceCopy[role]
   const displayName = session.nickname || config.badge
   const [status, setStatus] = useState('online')
-  const [queue, setQueue] = useState(() => staffQueues[role] || config.queue)
+  const [queue, setQueue] = useState([])
+  const [activeCaseId, setActiveCaseId] = useState(null)
   const [videoDraft, setVideoDraft] = useState({ title: '', topic: 'daily', videoUrl: '', description: '' })
-  const [pendingVideos, setPendingVideos] = useState(() => readPendingVideos(pendingVideoSeed))
+  const [pendingVideos, setPendingVideos] = useState([])
+
+  useEffect(() => {
+    const fetchQueue = async () => {
+      try {
+        const payload = await apiFetch('/api/conversations/queue')
+        setQueue(payload?.queue || [])
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchQueue()
+    const interval = setInterval(fetchQueue, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   const now = useMemo(() => (
     new Intl.DateTimeFormat('vi-VN', {
@@ -82,26 +90,31 @@ export default function StaffWorkspace({ role }) {
     navigate('/portal', { replace: true })
   }
 
-  const claimNextCase = () => {
+  const claimNextCase = async () => {
     if (role !== 'healer' || queue.length === 0) return
-    setQueue((items) => items.slice(1))
+    try {
+      const nextCase = queue[0]
+      await apiFetch(`/api/conversations/${nextCase.conversationId}/accept`, { method: 'PATCH' })
+      setQueue((items) => items.slice(1))
+      setActiveCaseId(nextCase.conversationId)
+    } catch (err) {
+      console.error(err)
+    }
   }
 
-  const addPendingVideo = (event) => {
+  const addPendingVideo = async (event) => {
     event.preventDefault()
     if (!videoDraft.title.trim() || !videoDraft.videoUrl.trim()) return
-    const nextVideo = {
-      id: `pending-${Date.now()}`,
-      title: videoDraft.title.trim(),
-      topic: videoDraft.topic,
-      doctorName: displayName,
-      status: 'pending',
-      reason: 'Video URL được lưu ở frontend mock, chờ admin duyệt.',
+    try {
+      await apiFetch('/api/videos', {
+        method: 'POST',
+        body: JSON.stringify(videoDraft)
+      })
+      alert('Tải video thành công, đang chờ Admin duyệt.')
+      setVideoDraft({ title: '', topic: 'daily', videoUrl: '', description: '' })
+    } catch (err) {
+      console.error(err)
     }
-    const next = [nextVideo, ...pendingVideos]
-    setPendingVideos(next)
-    savePendingVideos(next)
-    setVideoDraft({ title: '', topic: 'daily', videoUrl: '', description: '' })
   }
 
   return (
@@ -177,23 +190,29 @@ export default function StaffWorkspace({ role }) {
 
             <div className="grid gap-3">
               {queue.map((item) => (
-                <button key={`${item.name}-${item.topic}`} className="grid gap-3 rounded-2xl border border-bark-light/6 bg-white/55 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 md:grid-cols-[150px_minmax(0,1fr)_210px] md:items-center">
+                <button 
+                  key={item.conversationId} 
+                  onClick={() => claimNextCase()} // Chỉ là demo nếu có nhiều ca, hàm claimNextCase hiện tại lấy ca đầu tiên
+                  className="grid gap-3 rounded-2xl border border-bark-light/6 bg-white/55 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 md:grid-cols-[150px_minmax(0,1fr)_210px] md:items-center"
+                >
                   <div>
-                    <p className="font-bold text-bark">{item.name}</p>
-                    <p className="mt-1 text-xs text-bark-light/42">{item.wait || 'Ẩn danh'}</p>
+                    <p className="font-bold text-bark">{item.userNickname || 'Ẩn danh'}</p>
+                    <p className="mt-1 text-xs text-bark-light/42">
+                      Đợi từ: {new Date(item.waitingSince).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-bark-light/70">{item.topic}</p>
-                    {item.insight && <p className="mt-1 text-xs leading-5 text-bark-light/45">{item.insight}</p>}
+                    <p className="text-sm font-medium text-bark-light/70">Cần hỗ trợ</p>
+                    {item.aiInsights && <p className="mt-1 text-xs leading-5 text-bark-light/45 truncate">{item.aiInsights}</p>}
                   </div>
                   <span className="rounded-full bg-sage-ghost px-3 py-1 text-xs font-bold text-sage-dark md:text-center">
-                    {item.risk ? `Rủi ro ${item.risk}` : item.status}
+                    Đang chờ kết nối
                   </span>
                 </button>
               ))}
               {queue.length === 0 && (
                 <p className="rounded-2xl bg-sage-ghost/55 p-4 text-sm leading-6 text-bark-light/58">
-                  Hàng chờ hiện trống. Trạng thái của bạn vẫn được giữ ở frontend.
+                  Hàng chờ hiện trống. Bạn có thể thư giãn hoặc xem báo cáo.
                 </p>
               )}
             </div>
@@ -269,6 +288,9 @@ export default function StaffWorkspace({ role }) {
           </aside>
         </section>
       </div>
+      
+      {/* Messaging Panel for Staff */}
+      <MessagingPanel isOpen={!!activeCaseId} onClose={() => setActiveCaseId(null)} activeId={activeCaseId} />
     </main>
   )
 }

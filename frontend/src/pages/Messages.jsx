@@ -54,20 +54,42 @@ export default function Messages() {
           if (newConvo) convos = [newConvo]
         }
 
-        const formatted = convos.map(c => ({
-          id: c.id,
-          name: 'An Nhiên AI',
-          initials: 'AI',
-          color: 'from-sage to-sage-dark',
-          online: true,
-          role: 'ai',
-          isBot: true,
-          lastMsg: 'AI Healer sẵn sàng lắng nghe.',
-          time: new Date(c.createdAt || Date.now()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          unread: 0,
-        }))
+        const formatted = convos.map(c => {
+          let name = 'An Nhiên AI'
+          let lastMsg = 'AI Healer sẵn sàng lắng nghe.'
+          let isBot = true
+          let color = 'from-sage to-sage-dark'
+          let role = 'ai'
+
+          if (c.status === 'waiting') {
+            name = 'Đang tìm người đồng hành...'
+            lastMsg = 'Đang đợi Bác sĩ/Healer tiếp nhận...'
+            isBot = false
+            color = 'from-bark-light/20 to-bark-light/40'
+          } else if (c.status === 'active' && c.healerId) {
+            name = 'Chuyên gia An Nhiên' // Hoặc lấy tên từ backend
+            lastMsg = 'Chuyên gia đã kết nối.'
+            isBot = false
+            role = 'healer' // Hoặc 'doctor'
+            color = 'from-lavender to-sage'
+          }
+
+          return {
+            id: c.id,
+            name,
+            initials: isBot ? 'AI' : (c.status === 'waiting' ? '...' : 'CG'),
+            color,
+            online: true,
+            role,
+            isBot,
+            status: c.status,
+            lastMsg,
+            time: new Date(c.createdAt || Date.now()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            unread: 0,
+          }
+        })
         setChatList(formatted)
-        if (formatted.length > 0) setActiveId(formatted[0].id)
+        if (formatted.length > 0 && !activeId) setActiveId(formatted[0].id)
       } catch (err) {
         console.error(err)
       } finally {
@@ -75,7 +97,11 @@ export default function Messages() {
       }
     }
     initializeChat()
-  }, [])
+    
+    // Polling nhẹ mỗi 10s để xem có ai nhận ca chưa
+    const interval = setInterval(initializeChat, 10000)
+    return () => clearInterval(interval)
+  }, [activeId])
 
   useEffect(() => {
     if (!activeId) return
@@ -101,20 +127,18 @@ export default function Messages() {
       const newConvo = await apiFetch('/api/conversations', { method: 'POST' })
       const id = newConvo.id
       
-      const pool = role === 'doctor' ? staffProfiles.doctors : staffProfiles.healers
-      const person = pool[Math.floor(Math.random() * pool.length)]
       const nextChat = {
         id,
-        name: person.name,
-        initials: initialsFromName(person.name),
-        color: role === 'doctor' ? 'from-lavender to-sage' : 'from-sage to-sage-dark',
+        name: 'Đang tìm người đồng hành...',
+        initials: '...',
+        color: 'from-bark-light/20 to-bark-light/40',
         online: true,
         role,
         isBot: false,
-        lastMsg: role === 'doctor' ? 'Bác sĩ đã sẵn sàng xem câu chuyện của cậu.' : 'Healer đã được kết nối qua hệ thống.',
+        status: 'waiting',
+        lastMsg: 'Hệ thống đang xếp hàng chờ cho cậu...',
         time: 'Bây giờ',
         unread: 0,
-        messages: [],
       }
 
       setChatList((items) => [nextChat, ...items])
@@ -193,6 +217,16 @@ export default function Messages() {
     } finally {
       setIsAiLoading(false)
     }
+  }
+
+  const continueWithAi = async () => {
+    if (!activeChat?.isBot) return
+    setInputValue('Mình muốn tiếp tục trò chuyện với AI')
+    // A trick to trigger handleSend in next tick
+    setTimeout(() => {
+      const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' })
+      document.dispatchEvent(enterEvent)
+    }, 50)
   }
 
   return (

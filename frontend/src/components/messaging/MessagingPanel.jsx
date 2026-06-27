@@ -8,13 +8,15 @@ import {
   faShieldHalved,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import { conversations } from '../../lib/mockData'
+import { apiFetch } from '../../lib/api-client'
 
-export default function MessagingPanel({ isOpen, isClosing, onClose }) {
+export default function MessagingPanel({ isOpen, isClosing, onClose, activeId }) {
+  const [conversations, setConversations] = useState([])
   const [activeChat, setActiveChat] = useState(null)
   const [inputValue, setInputValue] = useState('')
   const [localMessages, setLocalMessages] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -30,19 +32,85 @@ export default function MessagingPanel({ isOpen, isClosing, onClose }) {
     if (!isOpen) setTimeout(() => { setActiveChat(null); setSearchQuery('') }, 350)
   }, [isOpen])
 
+  useEffect(() => {
+    if (isOpen) {
+      const fetchChats = async () => {
+        try {
+          const payload = await apiFetch('/api/conversations/me')
+          const formatted = (payload?.conversations || []).map(c => ({
+            id: c.id,
+            name: c.status === 'waiting' ? 'Ca đang chờ kết nối' : 'Người dùng An Nhiên',
+            unread: 0,
+            online: true,
+            status: c.status
+          }))
+          setConversations(formatted)
+          if (activeId) {
+            const chat = formatted.find(c => c.id === activeId)
+            if (chat) setActiveChat(chat)
+          }
+        } catch (err) {
+          console.error(err)
+        }
+      }
+      fetchChats()
+    }
+  }, [isOpen, activeId])
+
+  useEffect(() => {
+    if (!activeChat) return
+    const fetchMessages = async () => {
+      try {
+        const res = await apiFetch(`/api/messages/${activeChat.id}?limit=50`)
+        const msgs = (res?.messages || []).reverse().map(m => ({
+          id: m.id,
+          sender: m.senderRole === 'healer' || m.senderRole === 'doctor' ? 'me' : 'them',
+          text: m.content,
+          time: new Date(m.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        }))
+        setLocalMessages(prev => ({ ...prev, [activeChat.id]: msgs }))
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchMessages()
+  }, [activeChat])
+
   if (!isOpen && !isClosing) return null
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim() || !activeChat) return
+    const userText = inputValue.trim()
+    setInputValue('')
+    
+    const tempId = Date.now().toString()
     const newMsg = {
-      id: Date.now(), sender: 'me', text: inputValue.trim(),
+      id: tempId,
+      sender: 'me',
+      text: userText,
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     }
-    setLocalMessages(prev => ({ ...prev, [activeChat.id]: [...(prev[activeChat.id] || []), newMsg] }))
-    setInputValue('')
+    
+    setLocalMessages((prev) => ({
+      ...prev,
+      [activeChat.id]: [...(prev[activeChat.id] || []), newMsg],
+    }))
+
+    try {
+      await apiFetch(`/api/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
+          conversationId: activeChat.id,
+          content: userText,
+          requestAiReply: false, // Staff sends their own reply
+        })
+      })
+    } catch (err) {
+      console.error(err)
+    }
   }
 
-  const getMessages = (chat) => [...chat.messages, ...(localMessages[chat.id] || [])]
+  const getMessages = (chat) => localMessages[chat.id] || []
   const filteredConversations = conversations.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0)
 

@@ -135,6 +135,23 @@ export default function Community() {
     persistPosts(nextPosts)
   }
 
+  const handleReport = async (postId) => {
+    try {
+      await apiFetch(`/api/posts/${postId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'flagged' })
+      })
+      alert('Bài viết đã được báo cáo và đang chờ kiểm duyệt.')
+      const payload = await apiFetch('/api/posts')
+      if (payload && payload.posts) {
+        setPosts(payload.posts)
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Có lỗi xảy ra khi báo cáo bài viết.')
+    }
+  }
+
   const submitComment = (postId) => {
     const draft = (commentDrafts[postId] || '').trim()
     if (!draft) return
@@ -274,6 +291,15 @@ export default function Community() {
                     >
                       <FontAwesomeIcon icon={faComment} />
                       Bình luận
+                    </button>
+                    
+                    <button
+                      onClick={() => handleReport(post.id)}
+                      className="flex h-11 items-center justify-center gap-2 rounded-2xl text-sm font-bold text-bark-light/58 transition hover:bg-red-50 hover:text-red-600 active:scale-[0.98]"
+                      title="Báo cáo nội dung vi phạm"
+                    >
+                      <FontAwesomeIcon icon={faShieldHalved} />
+                      Báo cáo
                     </button>
                   </div>
 

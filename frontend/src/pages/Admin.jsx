@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -8,56 +8,68 @@ import {
   faVideo,
 } from '@fortawesome/free-solid-svg-icons'
 import { readSession } from '../lib/auth'
-import { flaggedPostSeed, pendingVideoSeed, topicLabels } from '../lib/mockData'
-import {
-  readCommunityPosts,
-  readFlaggedPosts,
-  readPendingVideos,
-  saveCommunityPosts,
-  saveFlaggedPosts,
-  savePendingVideos,
-} from '../lib/clientSafety'
+import { topicLabels } from '../lib/mockData'
+import { apiFetch } from '../lib/api-client'
 
 export default function Admin() {
   const session = readSession()
-  const [flagged, setFlagged] = useState(() => readFlaggedPosts(flaggedPostSeed))
-  const [pendingVideos, setPendingVideos] = useState(() => readPendingVideos(pendingVideoSeed))
+  const [flagged, setFlagged] = useState([])
+  const [pendingVideos, setPendingVideos] = useState([])
+
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      try {
+        const [postsRes, videosRes] = await Promise.all([
+          apiFetch('/api/posts/flagged'),
+          apiFetch('/api/videos/pending')
+        ])
+        if (postsRes?.posts) setFlagged(postsRes.posts)
+        if (videosRes?.videos) setPendingVideos(videosRes.videos)
+      } catch (e) {
+        console.error('Lỗi khi tải dữ liệu admin:', e)
+      }
+    }
+    fetchAdminData()
+  }, [])
 
   if (session.role !== 'admin') {
     return <Navigate to="/portal" replace />
   }
 
-  const approvePost = (post) => {
-    const publicPost = {
-      ...post,
-      status: 'public',
-      reason: '',
-      reactions: post.reactions || { like: 0, love: 0, care: 0, peace: 0 },
-      userReaction: null,
+  const approvePost = async (post) => {
+    try {
+      await apiFetch(`/api/posts/${post.id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'public' })
+      })
+      setFlagged((prev) => prev.filter((item) => item.id !== post.id))
+    } catch (e) {
+      console.error(e)
     }
-    const storedPosts = readCommunityPosts([])
-    const hasStoredPost = storedPosts.some((item) => item.id === post.id)
-    const posts = hasStoredPost
-      ? storedPosts.map((item) => (item.id === post.id ? publicPost : item))
-      : [publicPost, ...storedPosts]
-    const nextFlagged = flagged.filter((item) => item.id !== post.id)
-    setFlagged(nextFlagged)
-    saveFlaggedPosts(nextFlagged)
-    saveCommunityPosts(posts)
   }
 
-  const deletePost = (postId) => {
-    const nextFlagged = flagged.filter((item) => item.id !== postId)
-    const nextPosts = readCommunityPosts([]).filter((item) => item.id !== postId)
-    setFlagged(nextFlagged)
-    saveFlaggedPosts(nextFlagged)
-    saveCommunityPosts(nextPosts)
+  const deletePost = async (postId) => {
+    try {
+      await apiFetch(`/api/posts/${postId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'blocked' })
+      })
+      setFlagged((prev) => prev.filter((item) => item.id !== postId))
+    } catch (e) {
+      console.error(e)
+    }
   }
 
-  const resolveVideo = (videoId) => {
-    const next = pendingVideos.filter((video) => video.id !== videoId)
-    setPendingVideos(next)
-    savePendingVideos(next)
+  const resolveVideo = async (videoId) => {
+    try {
+      await apiFetch(`/api/videos/${videoId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'public' })
+      })
+      setPendingVideos((prev) => prev.filter((video) => video.id !== videoId))
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
