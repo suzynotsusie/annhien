@@ -1,75 +1,51 @@
 import { Router } from 'express';
-import { asyncRoute, sendError } from '../lib/http';
-import { isNonEmptyString } from '../lib/validation';
-import { verifyToken } from '../middleware/auth';
-import { assertPersonaId, generatePersonaReply, runModeration, runTriage } from '../services/ai.service';
-import type { AiHistoryItem } from '../types/domain';
+import { aiChatController, aiModerationController, aiTriageController } from '../controllers/ai.controller';
+import { verifyToken } from '../middlewares/auth';
+import { validate } from '../middlewares/validate';
+import { aiChatBodySchema, aiModerationBodySchema, aiTriageBodySchema } from '../validations/ai.validation';
 
 const router = Router();
 
 router.use(verifyToken);
 
-function sanitizeHistory(value: unknown): AiHistoryItem[] {
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .filter((item): item is Record<string, unknown> => item && typeof item === 'object')
-    .map((item): AiHistoryItem => ({
-      role: item.role === 'model' ? 'model' : 'user',
-      content: typeof item.content === 'string' ? item.content : '',
-    }))
-    .filter((item) => item.content.trim().length > 0)
-    .slice(-20);
-}
-
 router.post(
   '/chat',
-  asyncRoute(async (req, res) => {
-    const { personaId, userMessage, history } = req.body as Record<string, unknown>;
-    const safePersonaId = assertPersonaId(personaId);
-    const cleanMessage = typeof userMessage === 'string' ? userMessage.trim() : '';
-
-    if (!safePersonaId) {
-      return sendError(res, 400, 'PersonaId khong hop le', 'INVALID_PERSONA_ID');
+  validate(
+    { body: aiChatBodySchema },
+    {
+      codeByPath: {
+        personaId: 'INVALID_PERSONA_ID',
+        userMessage: 'INVALID_USER_MESSAGE',
+      },
+      messageByPath: {
+        personaId: 'PersonaId khong hop le',
+        userMessage: 'userMessage la bat buoc',
+      },
     }
-
-    if (!isNonEmptyString(cleanMessage)) {
-      return sendError(res, 400, 'userMessage la bat buoc', 'INVALID_USER_MESSAGE');
-    }
-
-    const reply = await generatePersonaReply(safePersonaId, cleanMessage, sanitizeHistory(history));
-    return res.status(200).json(reply);
-  })
+  ),
+  aiChatController
 );
-
 router.post(
   '/triage',
-  asyncRoute(async (req, res) => {
-    const { plainText } = req.body as Record<string, unknown>;
-    const cleanText = typeof plainText === 'string' ? plainText.trim() : '';
-
-    if (!isNonEmptyString(cleanText)) {
-      return sendError(res, 400, 'plainText la bat buoc', 'INVALID_PLAIN_TEXT');
+  validate(
+    { body: aiTriageBodySchema },
+    {
+      code: 'INVALID_PLAIN_TEXT',
+      message: 'plainText la bat buoc',
     }
-
-    const result = await runTriage(cleanText);
-    return res.status(200).json(result);
-  })
+  ),
+  aiTriageController
 );
-
 router.post(
   '/moderation',
-  asyncRoute(async (req, res) => {
-    const { content } = req.body as Record<string, unknown>;
-    const cleanContent = typeof content === 'string' ? content.trim() : '';
-
-    if (!isNonEmptyString(cleanContent)) {
-      return sendError(res, 400, 'content la bat buoc', 'INVALID_CONTENT');
+  validate(
+    { body: aiModerationBodySchema },
+    {
+      code: 'INVALID_CONTENT',
+      message: 'content la bat buoc',
     }
-
-    const result = await runModeration(cleanContent);
-    return res.status(200).json(result);
-  })
+  ),
+  aiModerationController
 );
 
 export default router;

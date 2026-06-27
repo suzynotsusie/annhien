@@ -1,27 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
+import { logWarn } from '../utils/logger';
 
-function resolveSupabaseUrl(rawUrl: string | undefined) {
+function resolveSupabaseUrl(rawUrl: string | undefined): string | null {
   try {
     const url = new URL(rawUrl || '');
     if (url.protocol === 'http:' || url.protocol === 'https:') {
       return url.toString().replace(/\/$/, '');
     }
   } catch {
-    // Fallback below keeps the API bootable while env values are still placeholders.
+    return null;
   }
 
-  console.warn('SUPABASE_URL chua hop le, tam dung local fallback http://127.0.0.1:54321');
-  return 'http://127.0.0.1:54321';
+  return null;
 }
 
 const supabaseUrl = resolveSupabaseUrl(process.env.SUPABASE_URL);
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'missing-service-role-key';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || null;
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn('Thieu SUPABASE_SERVICE_ROLE_KEY trong .env');
+export const isSupabaseConfigured = Boolean(supabaseUrl && serviceRoleKey);
+
+if (!isSupabaseConfigured) {
+  logWarn('Supabase env is incomplete. Backend will use local fallback mode for supported flows.');
 }
 
-export const supabase = createClient(supabaseUrl, serviceRoleKey, {
+export const supabase = createClient(supabaseUrl || 'http://127.0.0.1:54321', serviceRoleKey || 'missing-service-role-key', {
   auth: {
     persistSession: false,
     autoRefreshToken: false,

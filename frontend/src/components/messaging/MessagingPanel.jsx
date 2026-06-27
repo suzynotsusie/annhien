@@ -4,62 +4,11 @@ import {
   faChevronLeft,
   faPaperPlane,
   faMagnifyingGlass,
-  faPhone,
-  faVideo,
   faEllipsis,
-  faImage,
-  faFaceSmile,
-  faMicrophone,
+  faShieldHalved,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
-
-/* ─── Conversations Data ─── */
-export const conversations = [
-  {
-    id: 1, name: 'Chị Linh', initials: 'L', color: 'from-sage to-sage-dark',
-    online: true, lastMsg: 'Cậu cảm thấy thế nào sau buổi nói chuyện hôm qua?', time: '10 phút', unread: 2,
-    messages: [
-      { id: 1, sender: 'them', text: 'Chào Dương! Hôm nay cậu thế nào?', time: '14:20' },
-      { id: 2, sender: 'me', text: 'Em chào chị! Em hơi mệt vì kỳ thi sắp tới ạ', time: '14:22' },
-      { id: 3, sender: 'them', text: 'Chị hiểu. Áp lực học tập nhiều lúc khiến mình kiệt sức nhỉ. Cậu có muốn chia sẻ thêm không?', time: '14:23' },
-      { id: 4, sender: 'me', text: 'Dạ em cảm thấy như mình không đủ giỏi, luôn phải cố gắng hơn nữa...', time: '14:25' },
-      { id: 5, sender: 'them', text: 'Cảm giác đó rất bình thường. Nhưng cậu biết không, chỉ cần cậu đã cố gắng là đáng tự hào rồi', time: '14:26' },
-      { id: 6, sender: 'them', text: 'Cậu cảm thấy thế nào sau buổi nói chuyện hôm qua?', time: '15:40' },
-    ],
-  },
-  {
-    id: 2, name: 'Anh Minh', initials: 'M', color: 'from-lavender to-lavender-light',
-    online: false, lastMsg: 'Nhớ viết nhật ký trước khi ngủ nha!', time: '2 giờ', unread: 0,
-    messages: [
-      { id: 1, sender: 'them', text: 'Chào Dương! Tuần này cậu có gì muốn chia sẻ không?', time: '10:00' },
-      { id: 2, sender: 'me', text: 'Em có chuyện buồn về bạn bè ạ', time: '10:05' },
-      { id: 3, sender: 'them', text: 'Anh nghe đây. Cậu kể cho anh nghe nhé, không vội gì cả', time: '10:06' },
-      { id: 4, sender: 'me', text: 'Em cảm giác mấy đứa bạn thân ngày càng xa cách, không ai hiểu em', time: '10:10' },
-      { id: 5, sender: 'them', text: 'Đó là một cảm giác rất khó chịu. Cậu có muốn thử nói chuyện trực tiếp với bạn mình không?', time: '10:12' },
-      { id: 6, sender: 'them', text: 'Nhớ viết nhật ký trước khi ngủ nha!', time: '21:30' },
-    ],
-  },
-  {
-    id: 3, name: 'Chị Hà', initials: 'H', color: 'from-petal to-coral',
-    online: true, lastMsg: 'Bài tập thở hôm nay cậu làm chưa?', time: '5 giờ', unread: 1,
-    messages: [
-      { id: 1, sender: 'them', text: 'Dương ơi, hôm nay chị gửi cậu một bài tập mới nhé', time: '09:00' },
-      { id: 2, sender: 'me', text: 'Dạ vâng ạ, em sẵn sàng rồi!', time: '09:15' },
-      { id: 3, sender: 'them', text: 'Mỗi sáng khi thức dậy, cậu hít thở sâu 5 lần, rồi nghĩ về 3 điều mình biết ơn', time: '09:16' },
-      { id: 4, sender: 'them', text: 'Bài tập thở hôm nay cậu làm chưa?', time: '11:00' },
-    ],
-  },
-  {
-    id: 4, name: 'An Nhiên Bot', initials: 'AN', color: 'from-sage-muted to-sage-ghost',
-    online: true, lastMsg: 'Mình ở đây bất cứ khi nào cậu cần', time: 'Hôm qua', unread: 0, isBot: true,
-    messages: [
-      { id: 1, sender: 'them', text: 'Xin chào Dương! Mình là An Nhiên, trợ lý AI của cậu', time: '08:00' },
-      { id: 2, sender: 'them', text: 'Cậu có thể chia sẻ với mình bất cứ điều gì. Mình luôn ở đây lắng nghe, không phán xét', time: '08:00' },
-      { id: 3, sender: 'me', text: 'Cảm ơn bạn! Mình muốn hiểu thêm về cách quản lý stress', time: '08:30' },
-      { id: 4, sender: 'them', text: 'Tuyệt vời! Có vài phương pháp mình gợi ý:\n\nThở sâu 4-7-8\nViết nhật ký cảm xúc\nĐi bộ trong thiên nhiên\nNghe nhạc thư giãn\n\nCậu muốn thử cái nào trước?', time: '08:31' },
-      { id: 5, sender: 'them', text: 'Mình ở đây bất cứ khi nào cậu cần', time: '22:00' },
-    ],
-  },
-]
+import { conversations } from '../../lib/mockData'
 
 export default function MessagingPanel({ isOpen, isClosing, onClose }) {
   const [activeChat, setActiveChat] = useState(null)
@@ -235,7 +184,7 @@ export default function MessagingPanel({ isOpen, isClosing, onClose }) {
                 </p>
               </div>
               <div className="flex items-center gap-0.5">
-                {[faPhone, faVideo, faEllipsis].map((icon, i) => (
+                {[faUserGroup, faShieldHalved, faEllipsis].map((icon, i) => (
                   <button key={i} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-bark-light/5 transition-colors cursor-pointer active:scale-95">
                     <FontAwesomeIcon icon={icon} className={`text-sm ${i < 2 ? 'text-sage' : 'text-bark-light/35'}`} />
                   </button>
@@ -276,13 +225,6 @@ export default function MessagingPanel({ isOpen, isClosing, onClose }) {
             {/* Input */}
             <div className="px-3 pb-4 pt-2 border-t border-bark-light/6">
               <div className="flex items-end gap-2">
-                <div className="flex items-center gap-0.5 pb-1.5">
-                  {[faImage, faFaceSmile].map((icon, i) => (
-                    <button key={i} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-bark-light/5 transition-colors cursor-pointer active:scale-95">
-                      <FontAwesomeIcon icon={icon} className="text-base text-sage/70" />
-                    </button>
-                  ))}
-                </div>
                 <div className="flex-1">
                   <input ref={inputRef} type="text" placeholder="Nhắn tin..."
                     value={inputValue} onChange={e => setInputValue(e.target.value)}
@@ -291,20 +233,15 @@ export default function MessagingPanel({ isOpen, isClosing, onClose }) {
                       text-sm text-bark placeholder:text-bark-light/20 font-light
                       focus:outline-none focus:border-sage/30 focus:bg-white/60 transition-all" />
                 </div>
-                <div className="pb-1">
-                  {inputValue.trim() ? (
-                    <button onClick={handleSend}
-                      className="w-9 h-9 rounded-full bg-sage flex items-center justify-center shadow-md shadow-sage/15
-                        transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer">
-                      <FontAwesomeIcon icon={faPaperPlane} className="text-sm text-white" />
-                    </button>
-                  ) : (
-                    <button className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-bark-light/5 transition-colors cursor-pointer active:scale-95">
-                      <FontAwesomeIcon icon={faMicrophone} className="text-base text-sage/70" />
-                    </button>
-                  )}
-                </div>
+                <button
+                  onClick={handleSend}
+                  disabled={!inputValue.trim()}
+                  className="w-9 h-9 rounded-full bg-sage flex items-center justify-center shadow-md shadow-sage/15
+                    transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed">
+                  <FontAwesomeIcon icon={faPaperPlane} className="text-sm text-white" />
+                </button>
               </div>
+              <p className="mt-2 px-1 text-[10px] text-bark-light/32">Chỉ hỗ trợ tin nhắn văn bản.</p>
             </div>
           </div>
         )}

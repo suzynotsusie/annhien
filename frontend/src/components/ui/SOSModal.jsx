@@ -5,6 +5,11 @@ import { apiFetch } from '../../lib/api-client'
 
 const HOTLINES = [
   {
+    name: 'Tổng đài quốc gia bảo vệ trẻ em',
+    phone: '111',
+    href: 'tel:111',
+  },
+  {
     name: 'Đường dây nóng Ngày Mai',
     phone: '096 306 1414',
     href: 'tel:0963061414',
@@ -36,6 +41,7 @@ export default function SOSModal({ open, message, onClose }) {
       sessionStorage.setItem('annhien_sos_pending', 'true')
     } finally {
       setIsConnecting(false)
+      onClose?.()
       navigate('/tin-nhan', { state: { fromSOS: true } })
     }
   }
@@ -101,6 +107,12 @@ export default function SOSModal({ open, message, onClose }) {
                     </a>
                   ))}
                 </div>
+              </div>
+
+              <div className="mt-5 rounded-3xl border border-red-100 bg-white/55 p-4">
+                <p className="text-sm leading-6 text-bark-light/70">
+                  Nếu có thể, hãy di chuyển tới nơi có người khác ở gần và nói một câu rất ngắn: "Mình cần giúp đỡ ngay".
+                </p>
               </div>
 
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">

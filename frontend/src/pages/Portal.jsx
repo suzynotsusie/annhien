@@ -10,6 +10,13 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { API_URL, saveSession } from '../lib/auth'
 
+function routeForRole(role) {
+  if (role === 'doctor') return '/doctor'
+  if (role === 'healer') return '/healer'
+  if (role === 'admin') return '/admin'
+  return '/'
+}
+
 export default function Portal() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
@@ -39,9 +46,7 @@ export default function Portal() {
         nickname: data.nickname,
       })
 
-      if (data.role === 'doctor') navigate('/doctor', { replace: true })
-      else if (data.role === 'healer') navigate('/healer', { replace: true })
-      else navigate('/', { replace: true })
+      navigate(routeForRole(data.role), { replace: true })
     } catch (err) {
       setError(err.message || 'Không thể đăng nhập')
     } finally {
@@ -109,7 +114,7 @@ export default function Portal() {
                   onChange={(event) => setUsername(event.target.value)}
                   autoComplete="username"
                   className="h-12 rounded-2xl border border-bark-light/10 bg-white/75 px-4 text-sm text-bark outline-none transition focus:border-sage/45 focus:bg-white"
-                  placeholder="doctor hoặc healer"
+                  placeholder="doctor, healer hoặc admin"
                 />
               </label>
 
@@ -145,7 +150,7 @@ export default function Portal() {
             </form>
 
             <p className="mt-5 text-xs leading-5 text-bark-light/38">
-              Tài khoản demo dev: `doctor` hoặc `healer`, mật khẩu `annhien`.
+              Quyền truy cập nhân sự được xác thực bởi backend và điều hướng theo role trong token.
             </p>
           </div>
         </section>

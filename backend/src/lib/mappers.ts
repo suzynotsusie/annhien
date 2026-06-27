@@ -1,6 +1,6 @@
 import type { DbConversation, DbJournal, DbMessage, DbPost, DbUser, DbVideo } from '../types/domain';
 
-export function mapUser(row: DbUser) {
+export function mapUser(row: Pick<DbUser, 'id' | 'nickname' | 'role' | 'topics' | 'created_at'>) {
   return {
     id: row.id,
     nickname: row.nickname,

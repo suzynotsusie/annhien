@@ -1,4 +1,5 @@
 export type UserRole = 'user' | 'healer' | 'doctor' | 'admin';
+export type UserStatus = 'online' | 'busy' | 'offline';
 export type Topic = 'study' | 'family' | 'relationship' | 'daily' | 'other';
 export type Mood = 'great' | 'good' | 'okay' | 'tired' | 'anxious';
 export type PostStatus = 'public' | 'flagged' | 'hidden';
@@ -7,6 +8,7 @@ export type ConversationStatus = 'waiting' | 'active' | 'closed';
 export type SenderRole = 'user' | 'healer' | 'doctor' | 'ai' | 'system';
 export type RiskLevel = 'low' | 'medium' | 'high';
 export type ModerationVerdict = 'safe' | 'flagged' | 'blocked';
+export type VideoStatus = 'pending' | 'approved' | 'rejected';
 
 export interface AuthUser {
   userId: string;
@@ -16,8 +18,11 @@ export interface AuthUser {
 
 export interface DbUser {
   id: string;
+  username: string | null;
+  password_hash: string | null;
   nickname: string;
   role: UserRole;
+  status: UserStatus;
   topics: string[];
   created_at: string;
 }
@@ -66,9 +71,17 @@ export interface DbVideo {
   topic: Topic;
   video_url: string;
   description: string | null;
-  status: 'pending' | 'approved' | 'rejected';
+  status: VideoStatus;
   likes: number;
   saved: number;
+  created_at: string;
+}
+
+export interface DbPostReaction {
+  id: string;
+  post_id: string;
+  user_id: string;
+  reaction_type: ReactionType;
   created_at: string;
 }
 

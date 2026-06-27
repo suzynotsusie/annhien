@@ -5,11 +5,16 @@ import Onboarding from './pages/Onboarding'
 import Messages from './pages/Messages'
 import Portal from './pages/Portal'
 import StaffWorkspace from './pages/StaffWorkspace'
+import Community from './pages/Community'
+import HealingStation from './pages/HealingStation'
+import Profile from './pages/Profile'
+import Admin from './pages/Admin'
 import { readSession } from './lib/auth'
 
 function staffHome(role) {
   if (role === 'doctor') return '/doctor'
   if (role === 'healer') return '/healer'
+  if (role === 'admin') return '/admin'
   return '/'
 }
 
@@ -18,7 +23,7 @@ function RequirePatient({ children }) {
   if (!token) {
     return <Navigate to="/onboarding" replace />
   }
-  if (role === 'doctor' || role === 'healer') {
+  if (role === 'doctor' || role === 'healer' || role === 'admin') {
     return <Navigate to={staffHome(role)} replace />
   }
   return children
@@ -34,7 +39,7 @@ function SkipIfAuthenticated({ children }) {
 
 function SkipIfStaffAuthenticated({ children }) {
   const { token, role } = readSession()
-  if (token && (role === 'doctor' || role === 'healer')) {
+  if (token && (role === 'doctor' || role === 'healer' || role === 'admin')) {
     return <Navigate to={staffHome(role)} replace />
   }
   return children
@@ -51,18 +56,6 @@ function RequireStaffRole({ role, children }) {
   return children
 }
 
-function ComingSoon({ icon, title, description }) {
-  return (
-    <div className="flex min-h-dvh items-center justify-center bg-cream p-4">
-      <div className="glass-card max-w-md rounded-3xl p-10 text-center">
-        <p className="mb-3 text-4xl">{icon}</p>
-        <h2 className="mb-1 text-lg font-semibold text-bark">{title}</h2>
-        <p className="text-sm font-light text-bark-light/50">{description}</p>
-      </div>
-    </div>
-  )
-}
-
 export default function App() {
   return (
     <Routes>
@@ -77,6 +70,14 @@ export default function App() {
 
       <Route
         path="/portal"
+        element={
+          <SkipIfStaffAuthenticated>
+            <Portal />
+          </SkipIfStaffAuthenticated>
+        }
+      />
+      <Route
+        path="/staff"
         element={
           <SkipIfStaffAuthenticated>
             <Portal />
@@ -100,6 +101,14 @@ export default function App() {
           </RequireStaffRole>
         }
       />
+      <Route
+        path="/admin"
+        element={
+          <RequireStaffRole role="admin">
+            <Admin />
+          </RequireStaffRole>
+        }
+      />
 
       <Route
         element={
@@ -113,18 +122,9 @@ export default function App() {
         <Route path="/trang-chu" element={<Home />} />
         <Route path="/tin-nhan" element={<Messages />} />
         <Route path="/nhan-tin" element={<Messages />} />
-        <Route
-          path="/cong-dong"
-          element={<ComingSoon icon="🌍" title="Cộng đồng" description="Sắp ra mắt..." />}
-        />
-        <Route
-          path="/tram-chua-lanh"
-          element={<ComingSoon icon="🌿" title="Trạm chữa lành" description="Sắp ra mắt..." />}
-        />
-        <Route
-          path="/ho-so"
-          element={<ComingSoon icon="👤" title="Hồ sơ" description="Sắp ra mắt..." />}
-        />
+        <Route path="/cong-dong" element={<Community />} />
+        <Route path="/tram-chua-lanh" element={<HealingStation />} />
+        <Route path="/ho-so" element={<Profile />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
