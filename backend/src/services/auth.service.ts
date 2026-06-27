@@ -66,8 +66,8 @@ export async function setupAnonymousUser(input: AuthSetupBody): Promise<AuthSucc
 }
 
 /**
- * @param input Validated staff login payload.
- * @returns Auth payload for a healer, doctor, or admin.
+ * @param input Validated login payload.
+ * @returns Auth payload for a user, healer, doctor, or admin.
  */
 export async function loginStaffUser(input: AuthLoginBody): Promise<AuthSuccessPayload> {
   const user = isSupabaseConfigured
@@ -81,7 +81,7 @@ export async function loginStaffUser(input: AuthLoginBody): Promise<AuthSuccessP
   if (!user.password_hash) {
     throw new ApiError(
       503,
-      'Staff login local chua san sang. Hay cau hinh Supabase hoac LOCAL_DEMO_PASSWORD de kiem thu portal.',
+      'Dang nhap local chua san sang. Hay cau hinh Supabase hoac LOCAL_DEMO_PASSWORD de kiem thu role.',
       'STAFF_LOGIN_NOT_AVAILABLE'
     );
   }

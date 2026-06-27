@@ -10,7 +10,7 @@ import {
 import ThemeToggle from '../ui/ThemeToggle'
 
 const tabs = [
-  { icon: faHouse, label: 'Trang chủ', to: '/' },
+  { icon: faHouse, label: 'Trang chủ', to: '/home' },
   { icon: faCommentDots, label: 'Tin nhắn', to: '/tin-nhan' },
   { icon: faUsers, label: 'Cộng đồng', to: '/cong-dong' },
   { icon: faCompass, label: 'Khám phá', to: '/tram-chua-lanh' },
@@ -29,7 +29,7 @@ export default function BottomNav() {
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
+              end={to === '/home'}
               className={({ isActive }) => `
                 flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1.5 py-2 rounded-xl
                 transition-all duration-200

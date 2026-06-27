@@ -79,7 +79,7 @@ export default function StaffWorkspace({ role }) {
 
   const handleLogout = () => {
     clearSession()
-    navigate('/portal', { replace: true })
+    navigate('/login', { replace: true })
   }
 
   const claimNextCase = () => {

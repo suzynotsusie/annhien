@@ -11,7 +11,7 @@ import {
 import ThemeToggle from '../ui/ThemeToggle'
 
 const navItems = [
-  { icon: faHouse, label: 'Trang chủ', to: '/' },
+  { icon: faHouse, label: 'Trang chủ', to: '/home' },
   { icon: faCommentDots, label: 'Tin nhắn', to: '/tin-nhan' },
   { icon: faUsers, label: 'Cộng đồng', to: '/cong-dong' },
   { icon: faSpa, label: 'Chữa lành', to: '/tram-chua-lanh' },
@@ -38,7 +38,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/home'}
             className={({ isActive }) => `
               flex items-center gap-3 px-3 py-3 rounded-2xl relative
               transition-all duration-200 group

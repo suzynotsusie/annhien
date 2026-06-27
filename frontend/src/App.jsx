@@ -9,38 +9,40 @@ import Community from './pages/Community'
 import HealingStation from './pages/HealingStation'
 import Profile from './pages/Profile'
 import Admin from './pages/Admin'
-import { readSession } from './lib/auth'
-
-function staffHome(role) {
-  if (role === 'doctor') return '/doctor'
-  if (role === 'healer') return '/healer'
-  if (role === 'admin') return '/admin'
-  return '/'
-}
+import { isStaffRole, readSession, roleHome } from './lib/auth'
 
 function RequirePatient({ children }) {
-  const { token, role } = readSession()
+  const { token, role, onboarded } = readSession()
   if (!token) {
-    return <Navigate to="/onboarding" replace />
+    return <Navigate to="/login" replace />
   }
-  if (role === 'doctor' || role === 'healer' || role === 'admin') {
-    return <Navigate to={staffHome(role)} replace />
+  if (isStaffRole(role)) {
+    return <Navigate to={roleHome(role)} replace />
+  }
+  if (!onboarded) {
+    return <Navigate to="/onboarding" replace />
   }
   return children
 }
 
 function SkipIfAuthenticated({ children }) {
-  const { token, role } = readSession()
+  const { token, role, onboarded } = readSession()
   if (token) {
-    return <Navigate to={staffHome(role)} replace />
+    return <Navigate to={roleHome(role, onboarded)} replace />
   }
   return children
 }
 
-function SkipIfStaffAuthenticated({ children }) {
-  const { token, role } = readSession()
-  if (token && (role === 'doctor' || role === 'healer' || role === 'admin')) {
-    return <Navigate to={staffHome(role)} replace />
+function RequireOnboarding({ children }) {
+  const { token, role, onboarded } = readSession()
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
+  if (isStaffRole(role)) {
+    return <Navigate to={roleHome(role)} replace />
+  }
+  if (onboarded) {
+    return <Navigate to="/home" replace />
   }
   return children
 }
@@ -48,10 +50,10 @@ function SkipIfStaffAuthenticated({ children }) {
 function RequireStaffRole({ role, children }) {
   const session = readSession()
   if (!session.token) {
-    return <Navigate to="/portal" replace />
+    return <Navigate to="/login" replace />
   }
   if (session.role !== role) {
-    return <Navigate to={staffHome(session.role)} replace />
+    return <Navigate to={roleHome(session.role, session.onboarded)} replace />
   }
   return children
 }
@@ -60,28 +62,37 @@ export default function App() {
   return (
     <Routes>
       <Route
-        path="/onboarding"
+        path="/"
         element={
           <SkipIfAuthenticated>
-            <Onboarding />
+            <Portal />
           </SkipIfAuthenticated>
         }
       />
 
       <Route
-        path="/portal"
+        path="/login"
         element={
-          <SkipIfStaffAuthenticated>
+          <SkipIfAuthenticated>
             <Portal />
-          </SkipIfStaffAuthenticated>
+          </SkipIfAuthenticated>
         }
       />
       <Route
+        path="/portal"
+        element={<Navigate to="/login" replace />}
+      />
+      <Route
         path="/staff"
+        element={<Navigate to="/login" replace />}
+      />
+
+      <Route
+        path="/onboarding"
         element={
-          <SkipIfStaffAuthenticated>
-            <Portal />
-          </SkipIfStaffAuthenticated>
+          <RequireOnboarding>
+            <Onboarding />
+          </RequireOnboarding>
         }
       />
 
@@ -117,7 +128,6 @@ export default function App() {
           </RequirePatient>
         }
       >
-        <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
         <Route path="/trang-chu" element={<Home />} />
         <Route path="/tin-nhan" element={<Messages />} />

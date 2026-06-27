@@ -51,7 +51,7 @@ export default function Community() {
   const [commentDrafts, setCommentDrafts] = useState({})
 
   const visiblePosts = useMemo(() => {
-    return posts.filter((post) => post.status === 'public' && (activeTopic === 'all' || post.topic === activeTopic))
+    return posts.filter((post) => ['public', 'flagged'].includes(post.status) && (activeTopic === 'all' || post.topic === activeTopic))
   }, [activeTopic, posts])
 
   const persistPosts = (nextPosts) => {
@@ -64,12 +64,14 @@ export default function Community() {
     const trimmed = content.trim()
     if (!trimmed) return
 
-    if (detectBlockedContent(trimmed)) {
-      setNotice('Bài viết có nội dung gây tổn thương người khác nên chưa thể đăng.')
-      return
-    }
-
     const risk = detectRisk(trimmed)
+    const isKeywordFlagged = detectBlockedContent(trimmed)
+    const shouldFlag = risk.triggerSOS || isKeywordFlagged
+    const reason = risk.triggerSOS
+      ? 'Từ khóa rủi ro cao, cần admin xem kỹ trước khi công khai.'
+      : isKeywordFlagged
+        ? 'Dính bộ lọc từ khóa cộng đồng, chỉ người đăng thấy trong lúc chờ duyệt.'
+        : ''
     const nextPost = {
       id: `post-${Date.now()}`,
       content: trimmed,
@@ -80,14 +82,20 @@ export default function Community() {
       userReaction: null,
       comments: [],
       createdAt: new Date().toISOString(),
-      status: risk.triggerSOS ? 'flagged' : 'public',
+      status: shouldFlag ? 'flagged' : 'public',
+      reason,
     }
 
-    if (risk.triggerSOS) {
+    if (shouldFlag) {
       const flagged = [nextPost, ...readFlaggedPosts([])]
       saveFlaggedPosts(flagged)
-      setSos({ open: true, message: risk.suggestedResponse })
-      setNotice('Bài viết đã được giữ riêng để admin xem xét. SOS đã mở để cậu có hỗ trợ ngay.')
+      persistPosts([nextPost, ...posts])
+      if (risk.triggerSOS) setSos({ open: true, message: risk.suggestedResponse })
+      setNotice(
+        risk.triggerSOS
+          ? 'Bài viết đã được giữ riêng để admin xem xét. SOS đã mở để cậu có hỗ trợ ngay.'
+          : 'Bài viết đang chờ admin duyệt. Hiện chỉ mình cậu thấy bài này.',
+      )
     } else {
       persistPosts([nextPost, ...posts])
       setNotice('Đã đăng ẩn danh lên cộng đồng.')
@@ -176,6 +184,11 @@ export default function Community() {
                   <div className="mb-4 flex flex-wrap items-center gap-2">
                     {post.avatar && <img src={post.avatar} alt={post.authorLabel} className="h-10 w-10 rounded-2xl object-cover" />}
                     <span className="rounded-full bg-sage-ghost px-3 py-1 text-xs font-bold text-sage-dark">{post.authorLabel}</span>
+                    {post.status === 'flagged' && (
+                      <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
+                        Chỉ mình cậu thấy · chờ duyệt
+                      </span>
+                    )}
                     {post.roleBadge && (
                       <span className="rounded-full bg-lavender-light/70 px-3 py-1 text-xs font-bold text-bark">
                         <FontAwesomeIcon icon={post.roleBadge === 'Bác sĩ' ? faUserDoctor : faUserGroup} className="mr-1 text-[10px]" />
@@ -188,6 +201,11 @@ export default function Community() {
                   </div>
 
                   <p className="whitespace-pre-line text-base leading-8 text-bark">{post.content}</p>
+                  {post.status === 'flagged' && (
+                    <p className="mt-3 rounded-2xl border border-red-100 bg-red-50/70 px-4 py-3 text-xs leading-5 text-red-700">
+                      {post.reason || 'Bài viết đang chờ admin kiểm duyệt trước khi hiện với cộng đồng.'}
+                    </p>
+                  )}
 
                   <div className="mt-5 flex items-center justify-between border-y border-bark-light/7 py-2 text-sm text-bark-light/55">
                     <div className="flex items-center gap-1">

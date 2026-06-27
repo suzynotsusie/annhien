@@ -256,11 +256,18 @@ export default function Home() {
 
             <div className="flex flex-wrap items-center gap-2">
               <Link
-                to="/tin-nhan"
+                to="/tin-nhan?mode=ai"
                 className="inline-flex h-11 items-center gap-2 rounded-full bg-sage px-4 text-sm font-semibold text-white shadow-lg shadow-sage/20 transition-transform active:scale-[0.98]"
               >
                 <MessageCircle size={17} />
-                Tin nhắn
+                Nhắn AI
+              </Link>
+              <Link
+                to="/tin-nhan?connect=doctor"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-sage/20 bg-white/75 px-4 text-sm font-semibold text-sage-dark transition hover:bg-sage-ghost active:scale-[0.98]"
+              >
+                <ShieldCheck size={17} />
+                Kết nối bác sĩ
               </Link>
               <button
                 type="button"

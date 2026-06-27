@@ -4,18 +4,22 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowRight,
   faBriefcaseMedical,
+  faCircleNodes,
   faLeaf,
   faLock,
+  faPeopleArrows,
+  faUser,
+  faUserDoctor,
   faUserShield,
 } from '@fortawesome/free-solid-svg-icons'
-import { API_URL, saveSession } from '../lib/auth'
+import { API_URL, roleHome, saveSession } from '../lib/auth'
 
-function routeForRole(role) {
-  if (role === 'doctor') return '/doctor'
-  if (role === 'healer') return '/healer'
-  if (role === 'admin') return '/admin'
-  return '/'
-}
+const demoAccounts = [
+  { role: 'user', label: 'User', username: 'user_gionhe', icon: faUser, hint: 'Vào onboarding rồi tới app user' },
+  { role: 'doctor', label: 'Doctor', username: 'dr_lanhuong', icon: faUserDoctor, hint: 'Workspace bác sĩ' },
+  { role: 'healer', label: 'Healer', username: 'healer_linh', icon: faPeopleArrows, hint: 'Nhận ca user' },
+  { role: 'admin', label: 'Admin', username: 'admin', icon: faUserShield, hint: 'Duyệt bài cộng đồng' },
+]
 
 export default function Portal() {
   const navigate = useNavigate()
@@ -44,9 +48,10 @@ export default function Portal() {
         role: data.role,
         userId: data.userId,
         nickname: data.nickname,
+        onboarded: data.role !== 'user',
       })
 
-      navigate(routeForRole(data.role), { replace: true })
+      navigate(roleHome(data.role, data.role !== 'user'), { replace: true })
     } catch (err) {
       setError(err.message || 'Không thể đăng nhập')
     } finally {
@@ -66,19 +71,19 @@ export default function Portal() {
               <span className="text-base font-bold tracking-tight text-bark">An Nhiên Portal</span>
             </div>
 
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-sage">Staff access</p>
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-sage">Role access</p>
             <h1 className="max-w-lg text-4xl font-bold leading-tight tracking-tight text-bark">
-              Không gian làm việc riêng cho bác sĩ và healer.
+              Một cổng vào, bốn trải nghiệm riêng.
             </h1>
             <p className="mt-4 max-w-md text-sm leading-6 text-bark-light/58">
-              Đăng nhập để nhận ca, theo dõi hội thoại cần hỗ trợ và quản lý nội dung chữa lành.
+              Đăng nhập xong hệ thống tự đọc role: user, bác sĩ, healer hoặc admin rồi điều hướng đúng giao diện.
             </p>
           </div>
 
           <div className="grid gap-3">
             {[
-              { icon: faUserShield, title: 'Phân quyền rõ ràng', text: 'Token trả về role để chuyển đúng workspace.' },
-              { icon: faBriefcaseMedical, title: 'Không lẫn với user ẩn danh', text: 'Portal tách khỏi luồng onboarding chính.' },
+              { icon: faCircleNodes, title: 'Luồng role rõ ràng', text: 'User mới onboarding, staff đi thẳng workspace.' },
+              { icon: faBriefcaseMedical, title: 'Không lẫn vai trò', text: 'Bác sĩ, healer và admin không phải chọn trạng thái user.' },
             ].map((item) => (
               <div key={item.title} className="rounded-2xl border border-white/70 bg-white/55 p-4">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-sage/10 text-sage">
@@ -100,11 +105,34 @@ export default function Portal() {
               <h1 className="text-3xl font-bold tracking-tight text-bark">An Nhiên Portal</h1>
             </div>
 
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-sage">Đăng nhập nhân sự</p>
-            <h2 className="text-3xl font-bold tracking-tight text-bark">Vào workspace</h2>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-sage">Đăng nhập</p>
+            <h2 className="text-3xl font-bold tracking-tight text-bark">Chọn đúng vai trò</h2>
             <p className="mt-2 text-sm leading-6 text-bark-light/55">
-              Dành riêng cho bác sĩ và healer đã được cấp tài khoản.
+              User vào trải nghiệm ẩn danh. Bác sĩ, healer và admin vào workspace riêng.
             </p>
+
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              {demoAccounts.map((account) => (
+                <button
+                  key={account.role}
+                  type="button"
+                  onClick={() => {
+                    setUsername(account.username)
+                    setError('')
+                  }}
+                  className="rounded-2xl border border-bark-light/8 bg-white/58 p-3 text-left transition hover:-translate-y-0.5 hover:border-sage/30 hover:bg-white active:scale-[0.98]"
+                >
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sage-ghost text-sage">
+                      <FontAwesomeIcon icon={account.icon} className="text-xs" />
+                    </span>
+                    <span className="text-xs font-bold text-bark">{account.label}</span>
+                  </div>
+                  <p className="text-[11px] leading-4 text-bark-light/48">{account.username}</p>
+                  <p className="mt-1 text-[10px] leading-4 text-bark-light/36">{account.hint}</p>
+                </button>
+              ))}
+            </div>
 
             <form onSubmit={handleSubmit} className="mt-8 grid gap-4">
               <label className="grid gap-2">
@@ -114,7 +142,7 @@ export default function Portal() {
                   onChange={(event) => setUsername(event.target.value)}
                   autoComplete="username"
                   className="h-12 rounded-2xl border border-bark-light/10 bg-white/75 px-4 text-sm text-bark outline-none transition focus:border-sage/45 focus:bg-white"
-                  placeholder="doctor, healer hoặc admin"
+                  placeholder="user_gionhe, dr_lanhuong, healer_linh, admin"
                 />
               </label>
 
@@ -150,7 +178,7 @@ export default function Portal() {
             </form>
 
             <p className="mt-5 text-xs leading-5 text-bark-light/38">
-              Quyền truy cập nhân sự được xác thực bởi backend và điều hướng theo role trong token.
+              Mật khẩu demo local là giá trị bạn đặt ở <span className="font-bold text-sage-dark">LOCAL_DEMO_PASSWORD</span>. Backend trả token có role để frontend phân quyền.
             </p>
           </div>
         </section>

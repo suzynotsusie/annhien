@@ -1,25 +1,86 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faEllipsis,
   faMagnifyingGlass,
   faPaperPlane,
   faShieldHalved,
+  faUserDoctor,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import { conversations } from '../lib/mockData'
+import { conversations, staffProfiles } from '../lib/mockData'
+
+const aiConversation = conversations.find((chat) => chat.isBot) || conversations[0]
+
+function initialsFromName(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(-2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+}
 
 export default function Messages() {
-  const [activeId, setActiveId] = useState(conversations[0]?.id)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [chatList, setChatList] = useState(() => (aiConversation ? [aiConversation] : []))
+  const [activeId, setActiveId] = useState(aiConversation?.id)
   const [inputValue, setInputValue] = useState('')
   const [localMessages, setLocalMessages] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
 
+  const connectToStaff = useCallback((role) => {
+    const pool = role === 'doctor' ? staffProfiles.doctors : staffProfiles.healers
+    const person = pool[Math.floor(Math.random() * pool.length)]
+    const id = `${role}-${Date.now()}`
+    const nextChat = {
+      id,
+      name: person.name,
+      initials: initialsFromName(person.name),
+      color: role === 'doctor' ? 'from-lavender to-sage' : 'from-sage to-sage-dark',
+      online: true,
+      role,
+      lastMsg: role === 'doctor' ? 'Bác sĩ đã sẵn sàng xem câu chuyện của cậu.' : 'Healer đã được kết nối qua An Nhiên AI.',
+      time: 'Bây giờ',
+      unread: 0,
+      messages: [
+        {
+          id: `${id}-hello`,
+          sender: 'them',
+          text:
+            role === 'doctor'
+              ? `Chào cậu, mình là ${person.name}. Cậu có thể nói điều đang cần hỗ trợ chuyên môn, mình sẽ đi chậm cùng cậu.`
+              : `An Nhiên đã kết nối cậu với ${person.name}. Cậu cứ bắt đầu bằng một câu ngắn thôi cũng được.`,
+          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ],
+    }
+
+    setChatList((items) => [nextChat, ...items])
+    setActiveId(id)
+  }, [])
+
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    const connect = searchParams.get('connect')
+    if (connect === 'doctor') {
+      connectToStaff('doctor')
+      setSearchParams({}, { replace: true })
+      return
+    }
+    if (mode === 'ai' && aiConversation) {
+      setActiveId(aiConversation.id)
+      setSearchParams({}, { replace: true })
+    }
+  }, [connectToStaff, searchParams, setSearchParams])
+
   const filteredConversations = useMemo(
-    () => conversations.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase())),
-    [searchQuery],
+    () => chatList.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [chatList, searchQuery],
   )
-  const activeChat = conversations.find((chat) => chat.id === activeId) || conversations[0]
+  const activeChat = chatList.find((chat) => chat.id === activeId) || chatList[0]
   const messages = activeChat ? [...activeChat.messages, ...(localMessages[activeChat.id] || [])] : []
 
   const handleSend = () => {
@@ -37,6 +98,20 @@ export default function Messages() {
     setInputValue('')
   }
 
+  const continueWithAi = () => {
+    if (!activeChat?.isBot) return
+    const reply = {
+      id: Date.now(),
+      sender: 'them',
+      text: 'Được, mình sẽ ở lại cùng cậu. Cậu muốn kể điều đang nặng nhất lúc này, hay muốn mình gợi ý một bài thở trước?',
+      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    }
+    setLocalMessages((prev) => ({
+      ...prev,
+      [activeChat.id]: [...(prev[activeChat.id] || []), reply],
+    }))
+  }
+
   return (
     <div className="min-h-dvh bg-cream">
       <div className="mx-auto grid min-h-dvh w-full max-w-[1480px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:px-8 lg:py-6">
@@ -48,7 +123,7 @@ export default function Messages() {
                 <p className="mt-1 text-sm text-bark-light/48">Người đồng hành, chuyên gia và An Nhiên Bot.</p>
               </div>
               <span className="rounded-full bg-sage px-3 py-1 text-xs font-bold text-white">
-                {conversations.reduce((sum, c) => sum + c.unread, 0)}
+                {chatList.reduce((sum, c) => sum + c.unread, 0)}
               </span>
             </div>
 
@@ -86,10 +161,12 @@ export default function Messages() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-bold text-bark">
-                        {chat.name}
-                        {chat.isBot && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[10px] font-bold text-sage">AI</span>}
-                      </p>
+                    <p className="truncate text-sm font-bold text-bark">
+                      {chat.name}
+                      {chat.isBot && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[10px] font-bold text-sage">AI</span>}
+                      {chat.role === 'doctor' && <span className="ml-2 rounded-full bg-lavender-light/70 px-2 py-0.5 text-[10px] font-bold text-bark">Bác sĩ</span>}
+                      {chat.role === 'healer' && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[10px] font-bold text-sage">Healer</span>}
+                    </p>
                       <span className="shrink-0 text-[10px] text-bark-light/35">{chat.time}</span>
                     </div>
                     <p className="mt-1 truncate text-xs text-bark-light/48">{chat.lastMsg}</p>
@@ -119,11 +196,13 @@ export default function Messages() {
                   <h2 className="truncate text-lg font-bold tracking-tight text-bark">
                     {activeChat.name}
                     {activeChat.isBot && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[11px] font-bold text-sage">AI</span>}
+                    {activeChat.role === 'doctor' && <span className="ml-2 rounded-full bg-lavender-light/70 px-2 py-0.5 text-[11px] font-bold text-bark">Bác sĩ</span>}
+                    {activeChat.role === 'healer' && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[11px] font-bold text-sage">Healer</span>}
                   </h2>
                   <p className="text-xs text-bark-light/42">{activeChat.online ? 'Đang hoạt động' : 'Ngoại tuyến'}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  {[faUserGroup, faShieldHalved, faEllipsis].map((icon, index) => (
+                  {[activeChat.role === 'doctor' ? faUserDoctor : faUserGroup, faShieldHalved, faEllipsis].map((icon, index) => (
                     <button
                       key={index}
                       className="flex h-10 w-10 items-center justify-center rounded-2xl text-sage transition hover:bg-sage-ghost active:scale-95"
@@ -137,6 +216,29 @@ export default function Messages() {
 
               <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
                 <div className="mx-auto flex max-w-4xl flex-col gap-3">
+                  {activeChat.isBot && (
+                    <div className="rounded-3xl border border-sage-light/20 bg-sage-ghost/58 p-4">
+                      <p className="text-sm font-bold text-bark">An Nhiên hỏi cậu muốn đi theo hướng nào?</p>
+                      <p className="mt-1 text-xs leading-5 text-bark-light/55">
+                        Cậu có thể nhắn tiếp với AI, hoặc để AI random một healer đang online kết nối với cậu.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          onClick={continueWithAi}
+                          className="h-10 rounded-full bg-sage px-4 text-xs font-bold text-white transition active:scale-[0.98]"
+                        >
+                          Nhắn với AI
+                        </button>
+                        <button
+                          onClick={() => connectToStaff('healer')}
+                          className="h-10 rounded-full border border-bark-light/8 bg-white/70 px-4 text-xs font-bold text-bark-light/70 transition hover:text-sage active:scale-[0.98]"
+                        >
+                          Kết nối healer
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {messages.map((message) => {
                     const isMe = message.sender === 'me'
                     return (

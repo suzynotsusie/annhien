@@ -44,7 +44,7 @@ export default function Profile() {
 
   const logout = () => {
     clearSession()
-    navigate('/onboarding', { replace: true })
+    navigate('/login', { replace: true })
   }
 
   return (

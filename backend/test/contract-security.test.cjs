@@ -69,7 +69,7 @@ test('chat backend remains text-only and has no upload/media handlers', () => {
 
 test('package exposes repeatable test scripts', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(backendRoot, 'package.json'), 'utf8'));
-  assert.equal(pkg.scripts.build, 'tsc');
+  assert.match(pkg.scripts.build, /(^tsc$|typescript\/bin\/tsc$)/);
   assert.ok(pkg.scripts.test.includes('node --test'));
   assert.ok(pkg.scripts['test:unit']);
   assert.ok(pkg.scripts['test:api']);
