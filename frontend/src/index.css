@@ -148,28 +148,29 @@ html[data-theme='dark'] .btn-secondary {
 @keyframes breathe {
   /* Hít vào: 0s → 4s (scale lên) */
   0% {
-    transform: scale(1);
+    transform: scale(0.94);
     opacity: 0.6;
   }
   /* 4/19 ≈ 21% — Giữ hơi bắt đầu */
   21.05% {
-    transform: scale(1.5);
+    transform: scale(1.22);
     opacity: 1;
   }
   /* (4+7)/19 ≈ 57.9% — Thở ra bắt đầu */
   57.89% {
-    transform: scale(1.5);
+    transform: scale(1.22);
     opacity: 1;
   }
   /* 19/19 = 100% — Hết thở ra */
   100% {
-    transform: scale(1);
+    transform: scale(0.94);
     opacity: 0.6;
   }
 }
 
 .animate-breathe {
   animation: breathe 16s ease-in-out infinite;
+  transform-origin: center;
 }
 
 /* ═══════════════════════════════════════════════

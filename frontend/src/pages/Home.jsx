@@ -7,7 +7,6 @@ import {
   ChartNoAxesColumnIncreasing,
   ChevronRight,
   Leaf,
-  LockKeyhole,
   MessageCircle,
   RefreshCw,
   ShieldCheck,
@@ -373,29 +372,6 @@ export default function Home() {
           </section>
 
           <aside className="grid content-start gap-5">
-            <section className="rounded-[2rem] border border-white/75 bg-white/58 p-5 shadow-sm shadow-sage/5 backdrop-blur">
-              <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sage text-white">
-                  <LockKeyhole size={20} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold tracking-tight text-bark">Quy tắc an toàn</h2>
-                  <p className="mt-1 text-sm leading-6 text-bark-light/58">
-                    Nhật ký chỉ xử lý văn bản. Nội dung chi tiết chỉ được lấy khi cậu chọn mở từng dòng.
-                  </p>
-                </div>
-              </div>
-              <div className="grid gap-3">
-                <div className="rounded-2xl bg-sage-ghost/60 p-4">
-                  <p className="text-sm font-bold text-bark">AI triage trước khi lưu</p>
-                  <p className="mt-1 text-xs leading-5 text-bark-light/52">Nếu có tín hiệu nguy cơ cao, hệ thống mở SOS thay vì lưu ngay.</p>
-                </div>
-                <div className="rounded-2xl bg-white/65 p-4">
-                  <p className="text-sm font-bold text-bark">Mã hóa sau khi an toàn</p>
-                  <p className="mt-1 text-xs leading-5 text-bark-light/52">Văn bản được chuyển sang Base64 ở trình duyệt theo yêu cầu MVP.</p>
-                </div>
-              </div>
-            </section>
 
             <MoodChart journals={journals} />
 
