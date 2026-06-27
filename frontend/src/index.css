@@ -1,0 +1,292 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
+  
+  --color-cream: #f4f7f6;
+  --color-cream-warm: #f0ede8;
+  --color-sage: #7f9f86;
+  --color-sage-light: #a8c4ae;
+  --color-sage-dark: #5e7d64;
+  --color-sage-muted: #dce8de;
+  --color-sage-ghost: #eaf2eb;
+  --color-bark: #3d3b38;
+  --color-bark-light: #5c5955;
+  --color-petal: #e8d5c8;
+  --color-petal-light: #f5ede6;
+  --color-mist: #d4dce6;
+  --color-mist-light: #e8eef4;
+  --color-lavender: #c5b8d9;
+  --color-lavender-light: #e8e0f0;
+  --color-sun: #f0dfa0;
+  --color-sun-light: #faf3d8;
+  --color-coral: #e8a898;
+  --color-coral-light: #f5d8d0;
+}
+
+/* ═══════════════════════════════════════════════
+   DESIGN SYSTEM — Glass Card & Input
+   ═══════════════════════════════════════════════ */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 4px 24px rgba(132, 192, 137, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: var(--color-sage-muted);
+  box-shadow: 0 0 0 3px rgba(127, 159, 134, 0.12);
+}
+
+/* ═══════════════════════════════════════════════
+   DESIGN SYSTEM — Buttons
+   ═══════════════════════════════════════════════ */
+
+.btn-primary {
+  background: linear-gradient(135deg, #57a35e, #3d8744);
+  color: white;
+  border: none;
+  border-radius: 1rem;
+  box-shadow:
+    0 4px 14px rgba(87, 163, 94, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px rgba(87, 163, 94, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.btn-primary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1.5px solid rgba(200, 200, 200, 0.4);
+  transition: all 0.25s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(240, 240, 240, 0.8);
+  border-color: rgba(180, 180, 180, 0.5);
+}
+
+.btn-secondary:active {
+  transform: scale(0.96);
+}
+
+/* ═══════════════════════════════════════════════
+   DESIGN SYSTEM — Breathing Animation (4-7-8)
+   ═══════════════════════════════════════════════ */
+
+@keyframes breathe {
+  /* Hít vào: 0s → 4s (scale lên) */
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  /* 4/19 ≈ 21% — Giữ hơi bắt đầu */
+  21.05% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+  /* (4+7)/19 ≈ 57.9% — Thở ra bắt đầu */
+  57.89% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+  /* 19/19 = 100% — Hết thở ra */
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+}
+
+.animate-breathe {
+  animation: breathe 19s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITIES — Scrollbar, Scroll
+   ═══════════════════════════════════════════════ */
+
+/* Hide scrollbars globally for horizontal scroll areas */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll momentum on iOS */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITIES — Glass Base
+   ═══════════════════════════════════════════════ */
+
+/* Glass card base (legacy) */
+.glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS — FAB
+   ═══════════════════════════════════════════════ */
+
+/* Pulse glow animation for FAB */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(127, 159, 134, 0.4), 0 0 40px rgba(127, 159, 134, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(127, 159, 134, 0.6), 0 0 56px rgba(127, 159, 134, 0.25);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Sparkle rotation for FAB icon */
+@keyframes sparkle-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(15deg) scale(1.08); }
+  50% { transform: rotate(0deg) scale(1); }
+  75% { transform: rotate(-15deg) scale(1.08); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.animate-sparkle {
+  animation: sparkle-spin 4s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS — Card & Entry
+   ═══════════════════════════════════════════════ */
+
+/* Subtle float for journal card */
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.animate-float {
+  animation: gentle-float 6s ease-in-out infinite;
+}
+
+/* Mood button tap/press effect */
+.mood-btn {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mood-btn:active {
+  transform: scale(0.9);
+}
+
+/* Fade-in on mount */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS — Messaging Panel
+   ═══════════════════════════════════════════════ */
+
+/* Slide-up panel for messaging */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0.8;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.35s cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
+/* Overlay fade */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.animate-overlay-in {
+  animation: overlay-in 0.3s ease-out both;
+}
+
+.animate-overlay-out {
+  animation: overlay-out 0.25s ease-in both;
+}
+
+/* ═══════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════ */
+
+body {
+  margin: 0;
+  background: var(--color-cream);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  min-height: 100dvh;
+}
