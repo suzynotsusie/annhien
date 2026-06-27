@@ -2,7 +2,6 @@ import type { Request, Response } from 'express';
 import type { AuthenticatedRequest } from '../middlewares/auth';
 import { createVideo, listApprovedVideos, listPendingVideos, updateVideoStatus } from '../services/videos.service';
 import type { CreateVideoBody, ListVideosQuery, UpdateVideoStatusBody } from '../validations/videos.validation';
-import type { EntityIdParams } from '../validations/shared.validation';
 
 export async function listPendingVideosController(_req: AuthenticatedRequest, res: Response) {
   const payload = await listPendingVideos();
