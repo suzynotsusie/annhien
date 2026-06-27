@@ -17,6 +17,7 @@ import JournalEditor from '../components/features/JournalEditor'
 import { apiFetch } from '../lib/api-client'
 import { MOOD_OPTIONS } from '../lib/moods'
 import { decryptClientSide } from '../lib/crypto'
+import { fakeNotifications } from '../lib/mockData'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -177,6 +178,7 @@ export default function Home() {
   const [selectedContent, setSelectedContent] = useState('')
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [savedNotice, setSavedNotice] = useState('')
+  const [showNotifications, setShowNotifications] = useState(false)
 
   const nickname = localStorage.getItem('annhien_nickname') || 'Gió Nhẹ'
   const latestJournal = journals[0]
@@ -253,11 +255,18 @@ export default function Home() {
 
             <div className="flex flex-wrap items-center gap-2">
               <Link
-                to="/tin-nhan"
+                to="/tin-nhan?mode=ai"
                 className="inline-flex h-11 items-center gap-2 rounded-full bg-sage px-4 text-sm font-semibold text-white shadow-lg shadow-sage/20 transition-transform active:scale-[0.98]"
               >
                 <MessageCircle size={17} />
-                Tin nhắn
+                Nhắn AI
+              </Link>
+              <Link
+                to="/tin-nhan?connect=doctor"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-sage/20 bg-white/75 px-4 text-sm font-semibold text-sage-dark transition hover:bg-sage-ghost active:scale-[0.98]"
+              >
+                <ShieldCheck size={17} />
+                Kết nối bác sĩ
               </Link>
               <button
                 type="button"
@@ -267,13 +276,42 @@ export default function Home() {
                 <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
                 Làm mới
               </button>
-              <button
-                type="button"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-bark-light/8 bg-white/70 text-bark-light/45 transition-colors hover:text-sage"
-                aria-label="Thông báo"
-              >
-                <Bell size={17} />
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowNotifications((value) => !value)}
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-bark-light/8 bg-white/70 text-bark-light/45 transition-colors hover:text-sage"
+                  aria-label="Thông báo"
+                >
+                  <Bell size={17} />
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-coral px-1 text-[10px] font-bold text-white">
+                    {fakeNotifications.length}
+                  </span>
+                </button>
+                {showNotifications && (
+                  <div className="absolute right-0 top-[3.25rem] z-40 w-[min(340px,calc(100vw-2rem))] rounded-3xl border border-white/70 bg-white/95 p-3 shadow-2xl shadow-sage/16 backdrop-blur">
+                    <div className="mb-2 flex items-center justify-between px-2">
+                      <h2 className="text-sm font-bold text-bark">Thông báo</h2>
+                      <span className="rounded-full bg-sage-ghost px-2 py-1 text-[10px] font-bold text-sage-dark">Fake data</span>
+                    </div>
+                    <div className="grid gap-2">
+                      {fakeNotifications.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className="rounded-2xl bg-sage-ghost/55 p-3 text-left transition hover:bg-sage-ghost active:scale-[0.99]"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm font-bold text-bark">{item.title}</p>
+                            <span className="shrink-0 text-[10px] font-semibold text-bark-light/42">{item.time}</span>
+                          </div>
+                          <p className="mt-1 text-xs leading-5 text-bark-light/60">{item.body}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>

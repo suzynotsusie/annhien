@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Mây Nhỏ">
+  <rect width="512" height="512" rx="144" fill="#e8e0f0"/>
+  <circle cx="190" cy="276" r="90" fill="#c5b8d9"/>
+  <circle cx="278" cy="230" r="112" fill="#d4dce6"/>
+  <circle cx="352" cy="292" r="76" fill="#a8c4ae"/>
+  <rect x="130" y="250" width="270" height="118" rx="59" fill="#f4f7f6"/>
+  <text x="256" y="304" text-anchor="middle" dominant-baseline="middle" font-family="system-ui, sans-serif" font-size="86" font-weight="800" fill="#5e7d64">M</text>
+</svg>

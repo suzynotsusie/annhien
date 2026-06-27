@@ -4,8 +4,8 @@
   "description": "API Server cho An Nhien",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
+    "dev": "node ./node_modules/ts-node-dev/lib/bin.js --respawn --transpile-only src/index.ts",
+    "build": "node ./node_modules/typescript/bin/tsc",
     "test": "npm run build && node --test test/unit.test.cjs test/api-smoke.test.cjs test/contract-security.test.cjs",
     "test:unit": "npm run build && node --test test/unit.test.cjs",
     "test:api": "npm run build && node --test test/api-smoke.test.cjs",

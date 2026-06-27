@@ -1,24 +1,41 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowRightFromBracket,
   faBookOpen,
   faChartSimple,
-  faLeaf,
   faPenNib,
+  faUserDoctor,
+  faUserGroup,
   faWandMagicSparkles,
 } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate } from 'react-router-dom'
 import { clearSession, readSession } from '../lib/auth'
-import { decryptClientSide, readJournals, readSavedVideos } from '../lib/clientSafety'
-import { healingVideos, moodOptions } from '../lib/mockData'
+import { decryptClientSide } from '../lib/crypto'
+import { apiFetch } from '../lib/api-client'
+import { moodOptions, staffProfiles } from '../lib/mockData'
 
 export default function Profile() {
   const navigate = useNavigate()
   const session = readSession()
   const [report, setReport] = useState('')
-  const journals = readJournals()
-  const savedIds = readSavedVideos()
+  const [journals, setJournals] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const profileAsset = staffProfiles.users[0]
+
+  useEffect(() => {
+    const loadJournals = async () => {
+      try {
+        const payload = await apiFetch('/api/journals/me?limit=30')
+        setJournals(Array.isArray(payload?.journals) ? payload.journals : [])
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadJournals()
+  }, [])
 
   const moodStats = useMemo(() => {
     const total = Math.max(1, journals.length)
@@ -28,24 +45,30 @@ export default function Profile() {
     })
   }, [journals])
 
-  const savedVideos = healingVideos.filter((video) => savedIds.includes(video.id))
-
-  const createReport = () => {
+  const createReport = async () => {
     if (journals.length < 3) {
       setReport('Cậu cần thêm ít nhất 3 dòng nhật ký để báo cáo có ý nghĩa hơn. Hôm nay chỉ cần viết một đoạn ngắn cũng được.')
       return
     }
 
-    const latest = journals.slice(0, 3).map((journal) => decryptClientSide(journal.encryptedContent)).filter(Boolean)
-    const anxious = journals.filter((journal) => journal.mood === 'anxious' || journal.mood === 'tired').length
-    setReport(
-      `Trong ${journals.length} lần check-in gần đây, cậu đã quay lại với bản thân khá đều. Có ${anxious} lần cảm xúc nặng hơn, nhưng việc cậu vẫn viết xuống cho thấy cậu đang tìm cách chăm sóc mình. Tuần này, thử giữ một thói quen nhỏ: viết 3 dòng trước khi ngủ và chọn một bài thở đã lưu. Điều cậu viết gần đây nhất: "${latest[0] || 'một điều riêng tư'}".`,
-    )
+    setReport('Đang kết nối AI để phân tích dữ liệu cảm xúc...')
+    try {
+      const top3 = journals.slice(0, 3)
+      const details = await Promise.all(top3.map(j => apiFetch('/api/journals/' + j.id).catch(() => null)))
+      
+      const latest = details.map(d => d ? decryptClientSide(d.encryptedContent || d.encrypted_content || '') : '').filter(Boolean)
+      const anxious = journals.filter((journal) => journal.mood === 'anxious' || journal.mood === 'tired').length
+      setReport(
+        `Trong ${journals.length} lần check-in gần đây, cậu đã quay lại với bản thân khá đều. Có ${anxious} lần cảm xúc nặng hơn, nhưng việc cậu vẫn viết xuống cho thấy cậu đang tìm cách chăm sóc mình. Tuần này, thử giữ một thói quen nhỏ: viết 3 dòng trước khi ngủ và chọn một bài thở ở Trạm chữa lành. Điều cậu viết gần đây nhất: "${latest[0] || 'một điều riêng tư'}".`,
+      )
+    } catch {
+      setReport('Đã có lỗi xảy ra khi tạo báo cáo. Vui lòng thử lại sau.')
+    }
   }
 
   const logout = () => {
     clearSession()
-    navigate('/onboarding', { replace: true })
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -55,9 +78,7 @@ export default function Profile() {
           <header className="rounded-3xl border border-white/70 bg-white/58 p-5 shadow-sm shadow-sage/5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-sage text-2xl font-bold text-white">
-                  {(session.nickname || 'Gió Nhẹ').slice(0, 1)}
-                </div>
+                <img src={profileAsset.avatar} alt="Avatar ẩn danh" className="h-16 w-16 rounded-3xl object-cover shadow-sm shadow-sage/10" />
                 <div>
                   <p className="text-sm font-bold text-sage-dark">Ẩn danh</p>
                   <h1 className="text-3xl font-bold tracking-tight text-bark">{session.nickname || 'Gió Nhẹ'}</h1>
@@ -85,9 +106,9 @@ export default function Profile() {
               <p className="mt-2 text-sm font-semibold text-bark">Ngày duy trì</p>
             </div>
             <div className="rounded-3xl border border-white/70 bg-white/58 p-5 shadow-sm shadow-sage/5">
-              <FontAwesomeIcon icon={faLeaf} className="mb-5 text-sage" />
-              <p className="text-5xl font-bold leading-none text-sage-dark">{savedVideos.length}</p>
-              <p className="mt-2 text-sm font-semibold text-bark">Video đã lưu</p>
+              <FontAwesomeIcon icon={faChartSimple} className="mb-5 text-sage" />
+              <p className="text-5xl font-bold leading-none text-sage-dark">{moodStats.find((mood) => mood.count > 0)?.emoji || '🙂'}</p>
+              <p className="mt-2 text-sm font-semibold text-bark">Mood gần đây</p>
             </div>
           </section>
 
@@ -139,16 +160,40 @@ export default function Profile() {
 
         <aside className="grid content-start gap-4">
           <section className="rounded-3xl border border-white/70 bg-white/58 p-5 shadow-sm shadow-sage/5">
-            <h2 className="text-lg font-bold tracking-tight text-bark">Video đã lưu</h2>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sage-ghost text-sage">
+                <FontAwesomeIcon icon={faUserGroup} />
+              </div>
+              <h2 className="text-lg font-bold tracking-tight text-bark">Người đồng hành</h2>
+            </div>
             <div className="mt-4 grid gap-3">
-              {savedVideos.length === 0 ? (
-                <p className="rounded-2xl bg-sage-ghost/55 p-4 text-sm leading-6 text-bark-light/58">
-                  Cậu chưa lưu video nào. Vào Trạm chữa lành để chọn một bài hợp với mình.
-                </p>
-              ) : savedVideos.map((video) => (
-                <div key={video.id} className="rounded-2xl border border-bark-light/7 bg-white/62 p-4">
-                  <p className="text-sm font-bold text-bark">{video.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-bark-light/50">{video.doctorName}</p>
+              {staffProfiles.healers.map((person) => (
+                <div key={person.name} className="flex items-center gap-3 rounded-2xl border border-bark-light/7 bg-white/62 p-3">
+                  <img src={person.avatar} alt={person.name} className="h-12 w-12 rounded-2xl object-cover" />
+                  <div>
+                    <p className="text-sm font-bold text-bark">{person.name}</p>
+                    <p className="mt-1 text-xs leading-5 text-bark-light/50">{person.role}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-white/70 bg-white/58 p-5 shadow-sm shadow-sage/5">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sage-ghost text-sage">
+                <FontAwesomeIcon icon={faUserDoctor} />
+              </div>
+              <h2 className="text-lg font-bold tracking-tight text-bark">Bác sĩ tham vấn</h2>
+            </div>
+            <div className="grid gap-3">
+              {staffProfiles.doctors.map((person) => (
+                <div key={person.name} className="flex items-center gap-3 rounded-2xl border border-bark-light/7 bg-white/62 p-3">
+                  <img src={person.avatar} alt={person.name} className="h-12 w-12 rounded-2xl object-cover" />
+                  <div>
+                    <p className="text-sm font-bold text-bark">{person.name}</p>
+                    <p className="mt-1 text-xs leading-5 text-bark-light/50">{person.role}</p>
+                  </div>
                 </div>
               ))}
             </div>

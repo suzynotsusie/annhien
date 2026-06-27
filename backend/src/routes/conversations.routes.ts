@@ -5,6 +5,7 @@ import {
   createConversationController,
   getConversationQueueController,
   transferConversationController,
+  listMyConversationsController,
 } from '../controllers/conversations.controller';
 import { requireRole, verifyToken } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
@@ -15,6 +16,7 @@ const router = Router();
 router.use(verifyToken);
 
 router.post('/', requireRole('user'), createConversationController);
+router.get('/me', requireRole('user'), listMyConversationsController);
 router.get('/queue', requireRole('healer'), getConversationQueueController);
 router.patch(
   '/:id/accept',

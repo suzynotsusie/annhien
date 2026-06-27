@@ -7,9 +7,10 @@ import {
   faCompass,
   faUser,
 } from '@fortawesome/free-solid-svg-icons'
+import ThemeToggle from '../ui/ThemeToggle'
 
 const tabs = [
-  { icon: faHouse, label: 'Trang chủ', to: '/' },
+  { icon: faHouse, label: 'Trang chủ', to: '/home' },
   { icon: faCommentDots, label: 'Tin nhắn', to: '/tin-nhan' },
   { icon: faUsers, label: 'Cộng đồng', to: '/cong-dong' },
   { icon: faCompass, label: 'Khám phá', to: '/tram-chua-lanh' },
@@ -19,13 +20,16 @@ const tabs = [
 export default function BottomNav() {
   return (
     <nav className="lg:hidden fixed z-30 bottom-0 left-0 right-0" id="bottom-nav">
+      <div className="absolute -top-12 right-3">
+        <ThemeToggle compact />
+      </div>
       <div className="mx-2 mb-2 rounded-2xl bg-white/82 backdrop-blur-xl border border-bark-light/8 shadow-lg shadow-sage/5">
         <div className="flex items-center justify-around py-1.5">
           {tabs.map(({ icon, label, to }) => (
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
+              end={to === '/home'}
               className={({ isActive }) => `
                 flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1.5 py-2 rounded-xl
                 transition-all duration-200

@@ -52,6 +52,16 @@ function createInitialStore(): LocalStore {
 
   const users: DbUser[] = [
     {
+      id: 'local-user-gio-nhe',
+      username: 'user_gionhe',
+      password_hash: localDemoPasswordHash,
+      nickname: 'Gio Nhe',
+      role: 'user',
+      status: 'offline',
+      topics: [],
+      created_at: now,
+    },
+    {
       id: 'local-doctor-lan-huong',
       username: 'dr_lanhuong',
       password_hash: localDemoPasswordHash,

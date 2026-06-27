@@ -171,3 +171,46 @@ export const videos = [
     saved: 1120
   }
 ];
+
+export const posts = [
+  {
+    id: "p1",
+    authorId: "u1",
+    content: "Gần thi đại học rồi mà mình cảm thấy kiệt sức quá. Bố mẹ cứ kỳ vọng mình vào Y nhưng mình chỉ muốn học thiết kế. Mình không dám nói ra.",
+    topic: "family",
+    status: "public",
+    authorLabel: "Ẩn danh",
+    reactions: { hug: 15, empathy: 42, peace: 5 },
+    createdAt: "2024-05-10T08:00:00Z"
+  },
+  {
+    id: "p2",
+    authorId: "u2",
+    content: "Lên đại học mình bị sốc văn hóa và cảm thấy cô đơn kinh khủng. Không có ai để tâm sự, bạn bè cũ thì đều bận rộn với cuộc sống mới.",
+    topic: "study",
+    status: "public",
+    authorLabel: "Ẩn danh",
+    reactions: { hug: 23, empathy: 12, peace: 8 },
+    createdAt: "2024-05-11T14:30:00Z"
+  },
+  {
+    id: "p3",
+    authorId: "u3",
+    content: "Hôm nay sếp lại mắng mình trước mặt mọi người. Cảm giác bao nhiêu cố gắng đều không được công nhận. Thật sự muốn bỏ việc...",
+    topic: "daily",
+    status: "public",
+    authorLabel: "Ẩn danh",
+    reactions: { hug: 50, empathy: 80, peace: 12 },
+    createdAt: "2024-05-12T09:15:00Z"
+  },
+  {
+    id: "p4",
+    authorId: "u1",
+    content: "Chia tay mối tình 3 năm thật sự rất đau. Cứ ngỡ sẽ đi cùng nhau thật lâu, giờ mọi thứ đều trống rỗng.",
+    topic: "relationship",
+    status: "public",
+    authorLabel: "Ẩn danh",
+    reactions: { hug: 100, empathy: 50, peace: 25 },
+    createdAt: "2024-05-13T20:45:00Z"
+  }
+];

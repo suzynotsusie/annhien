@@ -28,18 +28,30 @@ export default function Admin() {
   }
 
   const approvePost = (post) => {
-    const publicPost = { ...post, status: 'public', reactions: { hug: 0, empathy: 0, peace: 0 }, userReaction: null }
-    const posts = [publicPost, ...readCommunityPosts([])]
+    const publicPost = {
+      ...post,
+      status: 'public',
+      reason: '',
+      reactions: post.reactions || { like: 0, love: 0, care: 0, peace: 0 },
+      userReaction: null,
+    }
+    const storedPosts = readCommunityPosts([])
+    const hasStoredPost = storedPosts.some((item) => item.id === post.id)
+    const posts = hasStoredPost
+      ? storedPosts.map((item) => (item.id === post.id ? publicPost : item))
+      : [publicPost, ...storedPosts]
     const nextFlagged = flagged.filter((item) => item.id !== post.id)
     setFlagged(nextFlagged)
     saveFlaggedPosts(nextFlagged)
     saveCommunityPosts(posts)
   }
 
-  const hidePost = (postId) => {
+  const deletePost = (postId) => {
     const nextFlagged = flagged.filter((item) => item.id !== postId)
+    const nextPosts = readCommunityPosts([]).filter((item) => item.id !== postId)
     setFlagged(nextFlagged)
     saveFlaggedPosts(nextFlagged)
+    saveCommunityPosts(nextPosts)
   }
 
   const resolveVideo = (videoId) => {
@@ -93,11 +105,11 @@ export default function Admin() {
                       Duyệt bài
                     </button>
                     <button
-                      onClick={() => hidePost(post.id)}
+                      onClick={() => deletePost(post.id)}
                       className="inline-flex h-10 items-center gap-2 rounded-full border border-bark-light/8 bg-white px-4 text-xs font-bold text-bark-light/58 transition hover:text-red-600 active:scale-[0.98]"
                     >
                       <FontAwesomeIcon icon={faEyeSlash} />
-                      Ẩn bài
+                      Xóa bài
                     </button>
                   </div>
                 </article>

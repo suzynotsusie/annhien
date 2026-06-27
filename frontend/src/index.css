@@ -2,6 +2,7 @@
 
 @theme {
   --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
+  --color-white: #ffffff;
   
   --color-cream: #f4f7f6;
   --color-cream-warm: #f0ede8;
@@ -22,6 +23,55 @@
   --color-sun-light: #faf3d8;
   --color-coral: #e8a898;
   --color-coral-light: #f5d8d0;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --color-white: #1b221e;
+  --color-cream: #101611;
+  --color-cream-warm: #151b16;
+  --color-sage: #8fb99a;
+  --color-sage-light: #a9cdb3;
+  --color-sage-dark: #bfe0c6;
+  --color-sage-muted: #263429;
+  --color-sage-ghost: #1d281f;
+  --color-bark: #edf5ee;
+  --color-bark-light: #c7d2ca;
+  --color-petal: #5a423b;
+  --color-petal-light: #2a211f;
+  --color-mist: #384655;
+  --color-mist-light: #1d2730;
+  --color-lavender: #9483ad;
+  --color-lavender-light: #2a2434;
+  --color-sun: #d9c676;
+  --color-sun-light: #2c2819;
+  --color-coral: #d78d82;
+  --color-coral-light: #33211f;
+}
+
+html,
+body,
+#root {
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+html[data-theme='dark'] .glass-card,
+html[data-theme='dark'] .glass,
+html[data-theme='dark'] .glass-input {
+  background: rgba(27, 34, 30, 0.7);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.24),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+html[data-theme='dark'] .btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* ═══════════════════════════════════════════════

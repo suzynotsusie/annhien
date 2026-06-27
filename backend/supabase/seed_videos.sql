@@ -1,0 +1,8 @@
+INSERT INTO videos (id, doctor_id, title, topic, video_url, description, likes, saved) VALUES
+('c1111111-1111-1111-1111-111111111111', 'd2222222-2222-2222-2222-222222222222', 'Một buổi khám sẽ mất bao lâu?', 'daily', '/assets/videos/video1.mp4', 'Bác sĩ Nam giải đáp một buổi thăm khám khi gặp khó khăn về tinh thần thường diễn ra như thế nào.', 1240, 890),
+('c2222222-2222-2222-2222-222222222222', 'd1111111-1111-1111-1111-111111111111', 'Video nền thư giãn', 'daily', '/assets/videos/video2.mp4', 'Video nền tạo bầu không khí nhẹ nhàng, phù hợp cho các ngữ cảnh nghỉ ngơi hoặc hít thở chậm.', 948, 712),
+('c3333333-3333-3333-3333-333333333333', 'd3333333-3333-3333-3333-333333333333', 'Thả lỏng cùng thiên nhiên', 'study', '/assets/videos/video3.mp4', 'Bối cảnh thư giãn tự nhiên giúp người xem thả lỏng và tạm tách khỏi nhịp sống bận rộn.', 2310, 1850),
+('c4444444-4444-4444-4444-444444444444', 'd4444444-4444-4444-4444-444444444444', 'Đi bộ chánh niệm', 'daily', '/assets/videos/video4.mp4', 'Video gợi nhắc người xem thở chậm, quan sát xung quanh và ở lại với hiện tại khi đi bộ trong rừng.', 560, 420),
+('c5555555-5555-5555-5555-555555555555', 'd5555555-5555-5555-5555-555555555555', 'Bình minh mới đầy năng lượng', 'daily', '/assets/videos/video5.mp4', 'Video mở ra một buổi sáng mới, nhắc người xem bắt đầu ngày với tâm thế tích cực và bình an.', 780, 540),
+('c6666666-6666-6666-6666-666666666666', 'd2222222-2222-2222-2222-222222222222', 'Sóng biển — Buông bỏ và thở', 'relationship', '/assets/videos/video6.mp4', 'Video dùng nhịp sóng biển để gợi câu chuyện buông bỏ, thở đều và thả lỏng cơ thể.', 1560, 1120)
+ON CONFLICT (id) DO NOTHING;

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { API_URL, saveSession } from '../lib/auth'
+import { API_URL, markUserOnboarded, saveSession } from '../lib/auth'
 import {
   faLeaf,
   faShieldHalved,
@@ -92,16 +92,20 @@ export default function Onboarding() {
         role: data.role || 'user',
         userId: data.userId,
         nickname: data.nickname,
+        onboarded: true,
       })
-      navigate('/')
+      markUserOnboarded()
+      navigate('/home')
     } catch {
       saveSession({
         token: 'demo_token_' + Date.now(),
         role: 'user',
         userId: 'demo_user_' + Date.now(),
         nickname: nickname.trim() || 'Người bạn ẩn danh',
+        onboarded: true,
       })
-      navigate('/')
+      markUserOnboarded()
+      navigate('/home')
     } finally {
       setIsLoading(false)
     }

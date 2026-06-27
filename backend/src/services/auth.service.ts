@@ -65,9 +65,73 @@ export async function setupAnonymousUser(input: AuthSetupBody): Promise<AuthSucc
   };
 }
 
+import { hash } from 'bcryptjs';
+import type { AuthRegisterBody } from '../validations/auth.validation';
+
+export async function registerUser(input: AuthRegisterBody): Promise<AuthSuccessPayload> {
+  const passwordHash = await hash(input.password, 10);
+  let user: DbUser;
+
+  if (isSupabaseConfigured) {
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', input.username)
+      .single();
+
+    if (existingUser) {
+      throw new ApiError(409, 'Tên đăng nhập đã tồn tại', 'USERNAME_EXISTS');
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        username: input.username,
+        password_hash: passwordHash,
+        nickname: input.nickname,
+        role: 'user',
+        topics: [],
+      })
+      .select('id,username,password_hash,nickname,role,status,topics,created_at')
+      .single();
+
+    if (error || !data) {
+      throw new ApiError(500, error?.message || 'Khong the tao user', 'SUPABASE_INSERT_FAILED');
+    }
+    user = data as DbUser;
+  } else {
+    if (localStore.users.some(u => u.username === input.username)) {
+      throw new ApiError(409, 'Tên đăng nhập đã tồn tại', 'USERNAME_EXISTS');
+    }
+    user = {
+      id: createLocalId('user'),
+      username: input.username,
+      password_hash: passwordHash,
+      nickname: input.nickname,
+      role: 'user',
+      status: 'offline',
+      topics: [],
+      created_at: createTimestamp(),
+    };
+    localStore.users.push(user);
+  }
+
+  return {
+    userId: user.id,
+    token: signAuthToken({
+      userId: user.id,
+      role: user.role,
+      nickname: user.nickname,
+    }),
+    nickname: user.nickname,
+    role: user.role,
+    expiresIn: getJwtExpiresInSeconds(),
+  };
+}
+
 /**
- * @param input Validated staff login payload.
- * @returns Auth payload for a healer, doctor, or admin.
+ * @param input Validated login payload.
+ * @returns Auth payload for a user, healer, doctor, or admin.
  */
 export async function loginStaffUser(input: AuthLoginBody): Promise<AuthSuccessPayload> {
   const user = isSupabaseConfigured
@@ -81,7 +145,7 @@ export async function loginStaffUser(input: AuthLoginBody): Promise<AuthSuccessP
   if (!user.password_hash) {
     throw new ApiError(
       503,
-      'Staff login local chua san sang. Hay cau hinh Supabase hoac LOCAL_DEMO_PASSWORD de kiem thu portal.',
+      'Dang nhap local chua san sang. Hay cau hinh Supabase hoac LOCAL_DEMO_PASSWORD de kiem thu role.',
       'STAFF_LOGIN_NOT_AVAILABLE'
     );
   }

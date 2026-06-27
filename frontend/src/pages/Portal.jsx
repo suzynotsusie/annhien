@@ -4,18 +4,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowRight,
   faBriefcaseMedical,
+  faCircleNodes,
   faLeaf,
   faLock,
-  faUserShield,
 } from '@fortawesome/free-solid-svg-icons'
-import { API_URL, saveSession } from '../lib/auth'
-
-function routeForRole(role) {
-  if (role === 'doctor') return '/doctor'
-  if (role === 'healer') return '/healer'
-  if (role === 'admin') return '/admin'
-  return '/'
-}
+import { API_URL, roleHome, saveSession } from '../lib/auth'
 
 export default function Portal() {
   const navigate = useNavigate()
@@ -44,9 +37,10 @@ export default function Portal() {
         role: data.role,
         userId: data.userId,
         nickname: data.nickname,
+        onboarded: data.role !== 'user',
       })
 
-      navigate(routeForRole(data.role), { replace: true })
+      navigate(roleHome(data.role, data.role !== 'user'), { replace: true })
     } catch (err) {
       setError(err.message || 'Không thể đăng nhập')
     } finally {
@@ -66,19 +60,19 @@ export default function Portal() {
               <span className="text-base font-bold tracking-tight text-bark">An Nhiên Portal</span>
             </div>
 
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-sage">Staff access</p>
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-sage">Role access</p>
             <h1 className="max-w-lg text-4xl font-bold leading-tight tracking-tight text-bark">
-              Không gian làm việc riêng cho bác sĩ và healer.
+              Ba vai trò,<br />chung một mục tiêu.
             </h1>
             <p className="mt-4 max-w-md text-sm leading-6 text-bark-light/58">
-              Đăng nhập để nhận ca, theo dõi hội thoại cần hỗ trợ và quản lý nội dung chữa lành.
+              Đăng nhập xong hệ thống tự đọc role: bác sĩ, healer hoặc admin rồi điều hướng đúng workspace.
             </p>
           </div>
 
           <div className="grid gap-3">
             {[
-              { icon: faUserShield, title: 'Phân quyền rõ ràng', text: 'Token trả về role để chuyển đúng workspace.' },
-              { icon: faBriefcaseMedical, title: 'Không lẫn với user ẩn danh', text: 'Portal tách khỏi luồng onboarding chính.' },
+              { icon: faCircleNodes, title: 'Luồng role rõ ràng', text: 'Nhân viên đi thẳng workspace tương ứng.' },
+              { icon: faBriefcaseMedical, title: 'Không lẫn vai trò', text: 'Bác sĩ, healer và admin hoạt động hoàn toàn độc lập.' },
             ].map((item) => (
               <div key={item.title} className="rounded-2xl border border-white/70 bg-white/55 p-4">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-sage/10 text-sage">
@@ -100,11 +94,14 @@ export default function Portal() {
               <h1 className="text-3xl font-bold tracking-tight text-bark">An Nhiên Portal</h1>
             </div>
 
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-sage">Đăng nhập nhân sự</p>
-            <h2 className="text-3xl font-bold tracking-tight text-bark">Vào workspace</h2>
-            <p className="mt-2 text-sm leading-6 text-bark-light/55">
-              Dành riêng cho bác sĩ và healer đã được cấp tài khoản.
+            <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-bark">
+              Cổng Nhân Viên
+            </h2>
+            <p className="mt-2 text-sm text-bark-light/60">
+              Chỉ dành riêng cho Bác sĩ, Healer và Quản trị viên
             </p>
+          </div>
 
             <form onSubmit={handleSubmit} className="mt-8 grid gap-4">
               <label className="grid gap-2">
@@ -114,7 +111,7 @@ export default function Portal() {
                   onChange={(event) => setUsername(event.target.value)}
                   autoComplete="username"
                   className="h-12 rounded-2xl border border-bark-light/10 bg-white/75 px-4 text-sm text-bark outline-none transition focus:border-sage/45 focus:bg-white"
-                  placeholder="doctor, healer hoặc admin"
+                  placeholder="Nhập tên đăng nhập"
                 />
               </label>
 
@@ -148,10 +145,6 @@ export default function Portal() {
                 {!isLoading && <FontAwesomeIcon icon={faArrowRight} className="text-xs" />}
               </button>
             </form>
-
-            <p className="mt-5 text-xs leading-5 text-bark-light/38">
-              Quyền truy cập nhân sự được xác thực bởi backend và điều hướng theo role trong token.
-            </p>
           </div>
         </section>
       </div>

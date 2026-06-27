@@ -1,40 +1,198 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faEllipsis,
   faMagnifyingGlass,
   faPaperPlane,
   faShieldHalved,
+  faUserDoctor,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import { conversations } from '../lib/mockData'
+import { staffProfiles } from '../lib/mockData'
+import { apiFetch } from '../lib/api-client'
+import { API_URL, readSession } from '../lib/auth'
+
+function initialsFromName(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(-2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+}
 
 export default function Messages() {
-  const [activeId, setActiveId] = useState(conversations[0]?.id)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [chatList, setChatList] = useState([])
+  const [activeId, setActiveId] = useState(null)
   const [inputValue, setInputValue] = useState('')
   const [localMessages, setLocalMessages] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [isAiLoading, setIsAiLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const messagesEndRef = useRef(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [localMessages, isAiLoading, activeId])
+
+  useEffect(() => {
+    const initializeChat = async () => {
+      try {
+        setIsLoading(true)
+        const payload = await apiFetch('/api/conversations/me')
+        let convos = payload?.conversations || []
+        
+        if (convos.length === 0) {
+          const newConvo = await apiFetch('/api/conversations', { method: 'POST' })
+          if (newConvo) convos = [newConvo]
+        }
+
+        const formatted = convos.map(c => ({
+          id: c.id,
+          name: 'An Nhiên AI',
+          initials: 'AI',
+          color: 'from-sage to-sage-dark',
+          online: true,
+          role: 'ai',
+          isBot: true,
+          lastMsg: 'AI Healer sẵn sàng lắng nghe.',
+          time: new Date(c.createdAt || Date.now()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          unread: 0,
+        }))
+        setChatList(formatted)
+        if (formatted.length > 0) setActiveId(formatted[0].id)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    initializeChat()
+  }, [])
+
+  useEffect(() => {
+    if (!activeId) return
+    const fetchMessages = async () => {
+      try {
+        const res = await apiFetch(`/api/messages/${activeId}?limit=50`)
+        const msgs = (res?.messages || []).reverse().map(m => ({
+          id: m.id,
+          sender: m.senderRole === 'user' ? 'me' : 'them',
+          text: m.content,
+          time: new Date(m.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        }))
+        setLocalMessages(prev => ({ ...prev, [activeId]: msgs }))
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchMessages()
+  }, [activeId])
+
+  const connectToStaff = useCallback(async (role) => {
+    try {
+      const newConvo = await apiFetch('/api/conversations', { method: 'POST' })
+      const id = newConvo.id
+      
+      const pool = role === 'doctor' ? staffProfiles.doctors : staffProfiles.healers
+      const person = pool[Math.floor(Math.random() * pool.length)]
+      const nextChat = {
+        id,
+        name: person.name,
+        initials: initialsFromName(person.name),
+        color: role === 'doctor' ? 'from-lavender to-sage' : 'from-sage to-sage-dark',
+        online: true,
+        role,
+        isBot: false,
+        lastMsg: role === 'doctor' ? 'Bác sĩ đã sẵn sàng xem câu chuyện của cậu.' : 'Healer đã được kết nối qua hệ thống.',
+        time: 'Bây giờ',
+        unread: 0,
+        messages: [],
+      }
+
+      setChatList((items) => [nextChat, ...items])
+      setActiveId(id)
+    } catch (err) {
+      console.error(err)
+    }
+  }, [])
+
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    const connect = searchParams.get('connect')
+    if (connect === 'doctor') {
+      connectToStaff('doctor')
+      setSearchParams({}, { replace: true })
+      return
+    }
+    if (mode === 'ai' && aiConversation) {
+      setActiveId(aiConversation.id)
+      setSearchParams({}, { replace: true })
+    }
+  }, [connectToStaff, searchParams, setSearchParams])
 
   const filteredConversations = useMemo(
-    () => conversations.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase())),
-    [searchQuery],
+    () => chatList.filter((chat) => chat.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [chatList, searchQuery],
   )
-  const activeChat = conversations.find((chat) => chat.id === activeId) || conversations[0]
-  const messages = activeChat ? [...activeChat.messages, ...(localMessages[activeChat.id] || [])] : []
+  const activeChat = chatList.find((chat) => chat.id === activeId) || chatList[0]
+  const messages = activeChat ? (localMessages[activeChat.id] || []) : []
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim() || !activeChat) return
+    const userText = inputValue.trim()
+    setInputValue('')
+    
+    const tempId = Date.now().toString()
     const newMsg = {
-      id: Date.now(),
+      id: tempId,
       sender: 'me',
-      text: inputValue.trim(),
+      text: userText,
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     }
+    
     setLocalMessages((prev) => ({
       ...prev,
       [activeChat.id]: [...(prev[activeChat.id] || []), newMsg],
     }))
-    setInputValue('')
+
+    setIsAiLoading(true)
+    
+    try {
+      const res = await apiFetch(`/api/messages`, {
+        method: 'POST',
+        body: JSON.stringify({
+          conversationId: activeChat.id,
+          content: userText,
+          requestAiReply: Boolean(activeChat.isBot),
+          personaId: 'healer'
+        })
+      })
+
+      if (res?.aiReply) {
+        const aiMsg = {
+          id: res.aiReply.id,
+          sender: 'them',
+          text: res.aiReply.content,
+          time: new Date(res.aiReply.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        }
+        setLocalMessages(prev => ({
+          ...prev,
+          [activeChat.id]: prev[activeChat.id].map(m => m.id === tempId ? { ...m, id: res.userMessage.id } : m).concat(aiMsg)
+        }))
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsAiLoading(false)
+    }
   }
 
   return (
@@ -48,7 +206,7 @@ export default function Messages() {
                 <p className="mt-1 text-sm text-bark-light/48">Người đồng hành, chuyên gia và An Nhiên Bot.</p>
               </div>
               <span className="rounded-full bg-sage px-3 py-1 text-xs font-bold text-white">
-                {conversations.reduce((sum, c) => sum + c.unread, 0)}
+                {chatList.reduce((sum, c) => sum + c.unread, 0)}
               </span>
             </div>
 
@@ -86,10 +244,12 @@ export default function Messages() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-bold text-bark">
-                        {chat.name}
-                        {chat.isBot && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[10px] font-bold text-sage">AI</span>}
-                      </p>
+                    <p className="truncate text-sm font-bold text-bark">
+                      {chat.name}
+                      {chat.isBot && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[10px] font-bold text-sage">AI</span>}
+                      {chat.role === 'doctor' && <span className="ml-2 rounded-full bg-lavender-light/70 px-2 py-0.5 text-[10px] font-bold text-bark">Bác sĩ</span>}
+                      {chat.role === 'healer' && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[10px] font-bold text-sage">Healer</span>}
+                    </p>
                       <span className="shrink-0 text-[10px] text-bark-light/35">{chat.time}</span>
                     </div>
                     <p className="mt-1 truncate text-xs text-bark-light/48">{chat.lastMsg}</p>
@@ -119,11 +279,13 @@ export default function Messages() {
                   <h2 className="truncate text-lg font-bold tracking-tight text-bark">
                     {activeChat.name}
                     {activeChat.isBot && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[11px] font-bold text-sage">AI</span>}
+                    {activeChat.role === 'doctor' && <span className="ml-2 rounded-full bg-lavender-light/70 px-2 py-0.5 text-[11px] font-bold text-bark">Bác sĩ</span>}
+                    {activeChat.role === 'healer' && <span className="ml-2 rounded-full bg-sage/10 px-2 py-0.5 text-[11px] font-bold text-sage">Healer</span>}
                   </h2>
                   <p className="text-xs text-bark-light/42">{activeChat.online ? 'Đang hoạt động' : 'Ngoại tuyến'}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  {[faUserGroup, faShieldHalved, faEllipsis].map((icon, index) => (
+                  {[activeChat.role === 'doctor' ? faUserDoctor : faUserGroup, faShieldHalved, faEllipsis].map((icon, index) => (
                     <button
                       key={index}
                       className="flex h-10 w-10 items-center justify-center rounded-2xl text-sage transition hover:bg-sage-ghost active:scale-95"
@@ -137,6 +299,29 @@ export default function Messages() {
 
               <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
                 <div className="mx-auto flex max-w-4xl flex-col gap-3">
+                  {activeChat.isBot && (
+                    <div className="rounded-3xl border border-sage-light/20 bg-sage-ghost/58 p-4">
+                      <p className="text-sm font-bold text-bark">An Nhiên hỏi cậu muốn đi theo hướng nào?</p>
+                      <p className="mt-1 text-xs leading-5 text-bark-light/55">
+                        Cậu có thể nhắn tiếp với AI, hoặc để AI random một healer đang online kết nối với cậu.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          onClick={continueWithAi}
+                          className="h-10 rounded-full bg-sage px-4 text-xs font-bold text-white transition active:scale-[0.98]"
+                        >
+                          Nhắn với AI
+                        </button>
+                        <button
+                          onClick={() => connectToStaff('healer')}
+                          className="h-10 rounded-full border border-bark-light/8 bg-white/70 px-4 text-xs font-bold text-bark-light/70 transition hover:text-sage active:scale-[0.98]"
+                        >
+                          Kết nối healer
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {messages.map((message) => {
                     const isMe = message.sender === 'me'
                     return (
@@ -156,6 +341,21 @@ export default function Messages() {
                       </div>
                     )
                   })}
+                  
+                  {isAiLoading && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[78%]">
+                        <div className="rounded-3xl rounded-bl-lg border border-bark-light/7 bg-white/75 px-5 py-4 text-bark shadow-sm">
+                          <div className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sage-dark/60"></span>
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sage-dark/60" style={{ animationDelay: '0.2s' }}></span>
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-sage-dark/60" style={{ animationDelay: '0.4s' }}></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               </div>
 

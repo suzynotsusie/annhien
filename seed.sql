@@ -37,3 +37,21 @@ INSERT INTO videos (id, doctor_id, title, topic, video_url, description, likes, 
 ('v4444444-4444-4444-4444-444444444444', 'd2222222-2222-2222-2222-222222222222', 'Chánh niệm: Đi bộ thư giãn trong rừng nắng ☀️', 'daily', 'https://assets.mixkit.co/videos/preview/mixkit-man-walking-in-a-sunny-forest-44917-large.mp4', 'Bài tập đi bộ chánh niệm 10 phút giúp kéo sự chú ý về hiện tại và giảm vòng lặp suy nghĩ tiêu cực.', 560, 420),
 ('v5555555-5555-5555-5555-555555555555', 'd4444444-4444-4444-4444-444444444444', 'Bình minh mới — Tìm lại hy vọng mỗi sáng 🌅', 'daily', 'https://assets.mixkit.co/videos/preview/mixkit-sunrise-nature-placeholder-large.mp4', 'Mỗi buổi sáng là một cơ hội mới. Cùng TS. Lê Đức Minh bắt đầu ngày với tâm thế tích cực.', 780, 540),
 ('v6666666-6666-6666-6666-666666666666', 'd5555555-5555-5555-5555-555555555555', 'Sóng biển — Buông bỏ và thở 🌊', 'relationship', 'https://assets.mixkit.co/videos/preview/mixkit-waves-beach-placeholder-large.mp4', 'Để tiếng sóng biển cuốn trôi lo lắng. Bài thiền hướng dẫn buông bỏ những điều ngoài tầm kiểm soát.', 1560, 1120);
+
+-- =========================================================
+-- 4. Người dùng cơ bản (Users)
+-- Mật khẩu mặc định: 123456
+-- =========================================================
+INSERT INTO users (id, username, password_hash, nickname, role, status, topics) VALUES
+('u1111111-1111-1111-1111-111111111111', 'user1', crypt('123456', gen_salt('bf')), 'Học sinh cuối cấp', 'user', 'offline', '["study"]'),
+('u2222222-2222-2222-2222-222222222222', 'user2', crypt('123456', gen_salt('bf')), 'Sinh viên năm nhất', 'user', 'online', '["relationship"]'),
+('u3333333-3333-3333-3333-333333333333', 'user3', crypt('123456', gen_salt('bf')), 'Người đi làm', 'user', 'offline', '["daily", "family"]');
+
+-- =========================================================
+-- 5. Bài đăng cộng đồng (Posts)
+-- =========================================================
+INSERT INTO posts (id, author_id, content, topic, status, author_label, reactions) VALUES
+('p1111111-1111-1111-1111-111111111111', 'u1111111-1111-1111-1111-111111111111', 'Gần thi đại học rồi mà mình cảm thấy kiệt sức quá. Bố mẹ cứ kỳ vọng mình vào Y nhưng mình chỉ muốn học thiết kế. Mình không dám nói ra.', 'family', 'public', 'Ẩn danh', '{"hug": 15, "empathy": 42, "peace": 5}'),
+('p2222222-2222-2222-2222-222222222222', 'u2222222-2222-2222-2222-222222222222', 'Lên đại học mình bị sốc văn hóa và cảm thấy cô đơn kinh khủng. Không có ai để tâm sự, bạn bè cũ thì đều bận rộn với cuộc sống mới.', 'study', 'public', 'Ẩn danh', '{"hug": 23, "empathy": 12, "peace": 8}'),
+('p3333333-3333-3333-3333-333333333333', 'u3333333-3333-3333-3333-333333333333', 'Hôm nay sếp lại mắng mình trước mặt mọi người. Cảm giác bao nhiêu cố gắng đều không được công nhận. Thật sự muốn bỏ việc...', 'daily', 'public', 'Ẩn danh', '{"hug": 50, "empathy": 80, "peace": 12}'),
+('p4444444-4444-4444-4444-444444444444', 'u1111111-1111-1111-1111-111111111111', 'Chia tay mối tình 3 năm thật sự rất đau. Cứ ngỡ sẽ đi cùng nhau thật lâu, giờ mọi thứ đều trống rỗng.', 'relationship', 'public', 'Ẩn danh', '{"hug": 100, "empathy": 50, "peace": 25}');
