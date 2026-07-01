@@ -134,6 +134,34 @@ export async function acceptConversation(conversationId: string, auth: AuthUser)
   };
 }
 
+export async function deleteConversation(conversationId: string, auth: AuthUser) {
+  const conversation = await findConversationById(conversationId);
+
+  if (!conversation) {
+    throw new ApiError(404, 'Khong tim thay conversation', 'CONVERSATION_NOT_FOUND');
+  }
+
+  if (!canAccessConversation(conversation, auth.userId)) {
+    throw new ApiError(403, 'Khong co quyen xoa conversation nay', 'CONVERSATION_FORBIDDEN');
+  }
+
+  if (isSupabaseConfigured) {
+    const { error: messagesError } = await supabase.from('messages').delete().eq('conversation_id', conversationId);
+    if (messagesError) {
+      throw new ApiError(500, messagesError.message, 'SUPABASE_DELETE_FAILED');
+    }
+    const { error } = await supabase.from('conversations').delete().eq('id', conversationId);
+    if (error) {
+      throw new ApiError(500, error.message, 'SUPABASE_DELETE_FAILED');
+    }
+    return { success: true };
+  }
+
+  localStore.messages = localStore.messages.filter((m) => m.conversation_id !== conversationId);
+  localStore.conversations = localStore.conversations.filter((c) => c.id !== conversationId);
+  return { success: true };
+}
+
 /**
  * @param conversationId Requested conversation id.
  * @param auth Authenticated user or healer.

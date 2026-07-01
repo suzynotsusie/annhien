@@ -95,7 +95,7 @@ function MoodChart({ journals }) {
   )
 }
 
-function JournalHistory({ journals, selectedId, selectedContent, isLoadingDetail, onSelect }) {
+function JournalHistory({ journals, selectedId, selectedContent, isLoadingDetail, onSelect, onDelete }) {
   return (
     <section className="rounded-[2rem] border border-white/75 bg-white/58 p-5 shadow-sm shadow-sage/5 backdrop-blur">
       <div className="mb-5 flex items-center justify-between gap-3">
@@ -150,11 +150,27 @@ function JournalHistory({ journals, selectedId, selectedContent, isLoadingDetail
                   </div>
 
                   {isSelected && (
-                    <div className="mt-4 rounded-2xl bg-white/75 p-4">
+                    <div className="mt-4 rounded-2xl bg-white/75 p-4 relative">
                       {isLoadingDetail ? (
                         <p className="text-sm text-bark-light/50">Đang giải mã nội dung...</p>
                       ) : selectedContent ? (
-                        <p className="whitespace-pre-line text-sm leading-7 text-bark-light/78">{selectedContent}</p>
+                        <>
+                          <p className="whitespace-pre-line text-sm leading-7 text-bark-light/78">{selectedContent}</p>
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Bạn có chắc chắn muốn xóa dòng nhật ký này không?')) {
+                                  onDelete(journal.id);
+                                }
+                              }}
+                              className="text-xs text-red-500 hover:text-red-700 font-semibold px-3 py-1.5 rounded-full border border-red-200 hover:bg-red-50 transition"
+                            >
+                              Xóa nhật ký
+                            </button>
+                          </div>
+                        </>
                       ) : (
                         <p className="text-sm text-red-600">Không thể giải mã nội dung nhật ký này.</p>
                       )}
@@ -226,6 +242,19 @@ export default function Home() {
       setSelectedContent('')
     } finally {
       setIsLoadingDetail(false)
+    }
+  }
+
+  const handleDeleteJournal = async (id) => {
+    try {
+      await apiFetch('/api/journals/' + id, { method: 'DELETE' })
+      if (selectedId === id) {
+        setSelectedId(null)
+        setSelectedContent('')
+      }
+      await loadJournals()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không thể xóa nhật ký.')
     }
   }
 
@@ -346,6 +375,7 @@ export default function Home() {
               selectedContent={selectedContent}
               isLoadingDetail={isLoadingDetail}
               onSelect={handleSelectJournal}
+              onDelete={handleDeleteJournal}
             />
 
             {error && (

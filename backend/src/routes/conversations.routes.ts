@@ -6,6 +6,7 @@ import {
   getConversationQueueController,
   transferConversationController,
   listMyConversationsController,
+  deleteConversationController,
 } from '../controllers/conversations.controller';
 import { requireRole, verifyToken } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
@@ -52,6 +53,17 @@ router.post(
     }
   ),
   transferConversationController
+);
+router.delete(
+  '/:id',
+  validate(
+    { params: conversationIdRouteSchema },
+    {
+      code: 'INVALID_CONVERSATION_ID',
+      message: 'ConversationId khong hop le',
+    }
+  ),
+  deleteConversationController
 );
 
 export default router;

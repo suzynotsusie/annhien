@@ -62,7 +62,7 @@ export default function MessagingPanel({ isOpen, isClosing, onClose, activeId })
     const fetchMessages = async () => {
       try {
         const res = await apiFetch(`/api/messages/${activeChat.id}?limit=50`)
-        const msgs = (res?.messages || []).reverse().map(m => ({
+        const msgs = (res?.messages || []).map(m => ({
           id: m.id,
           sender: m.senderRole === 'healer' || m.senderRole === 'doctor' ? 'me' : 'them',
           text: m.content,

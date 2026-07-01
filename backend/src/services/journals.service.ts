@@ -88,29 +88,49 @@ export async function listMyJournals(userId: string, query: JournalListQuery) {
  */
 export async function getJournalById(userId: string, journalId: string) {
   const journal = isSupabaseConfigured
-    ? await findSupabaseJournalById(journalId)
+    ? await findSupabaseJournalById(userId, journalId)
     : localStore.journals.find((item) => item.id === journalId) || null;
 
   if (!journal) {
-    throw new ApiError(404, 'Khong tim thay journal', 'JOURNAL_NOT_FOUND');
-  }
-
-  if (journal.user_id !== userId) {
-    throw new ApiError(403, 'Journal khong thuoc user nay', 'JOURNAL_FORBIDDEN');
+    throw new ApiError(404, 'Khong tim thay nhat ky', 'JOURNAL_NOT_FOUND');
   }
 
   return mapJournal(journal);
 }
 
+export async function deleteJournal(userId: string, journalId: string) {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase
+      .from('journals')
+      .delete()
+      .eq('id', journalId)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new ApiError(500, error.message, 'SUPABASE_DELETE_FAILED');
+    }
+  } else {
+    const index = localStore.journals.findIndex((item) => item.id === journalId && item.user_id === userId);
+    if (index === -1) {
+      throw new ApiError(404, 'Khong tim thay nhat ky', 'JOURNAL_NOT_FOUND');
+    }
+    localStore.journals.splice(index, 1);
+  }
+
+  return { success: true };
+}
+
 /**
+ * @param userId User id.
  * @param journalId Journal id.
  * @returns Matching Supabase journal or null.
  */
-async function findSupabaseJournalById(journalId: string): Promise<DbJournal | null> {
+async function findSupabaseJournalById(userId: string, journalId: string): Promise<DbJournal | null> {
   const { data, error } = await supabase
     .from('journals')
     .select('id,user_id,encrypted_content,mood,created_at')
     .eq('id', journalId)
+    .eq('user_id', userId)
     .maybeSingle();
 
   if (error) {

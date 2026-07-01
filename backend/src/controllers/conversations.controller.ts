@@ -7,6 +7,7 @@ import {
   getConversationQueue,
   transferConversation,
   listMyConversations,
+  deleteConversation,
 } from '../services/conversations.service';
 
 export async function listMyConversationsController(req: AuthenticatedRequest, res: Response) {
@@ -65,5 +66,11 @@ export async function closeConversationController(req: AuthenticatedRequest, res
 export async function transferConversationController(req: AuthenticatedRequest, res: Response) {
   const params = req.params as ConversationIdRouteParams;
   const payload = await transferConversation(params.id, req.user!);
+  return res.status(200).json(payload);
+}
+
+export async function deleteConversationController(req: AuthenticatedRequest, res: Response) {
+  const params = req.params as ConversationIdRouteParams;
+  const payload = await deleteConversation(params.id, req.user!);
   return res.status(200).json(payload);
 }

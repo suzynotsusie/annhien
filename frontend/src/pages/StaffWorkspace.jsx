@@ -215,10 +215,9 @@ export default function StaffWorkspace({ role }) {
 
             <div className="grid gap-3">
               {queue.map((item) => (
-                <button 
+                <div 
                   key={item.conversationId} 
-                  onClick={() => claimCase(item.conversationId)}
-                  className="grid gap-3 rounded-2xl border border-bark-light/6 bg-white/55 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 md:grid-cols-[150px_minmax(0,1fr)_210px] md:items-center"
+                  className="grid gap-3 rounded-2xl border border-bark-light/6 bg-white/55 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-sage/8 md:grid-cols-[150px_minmax(0,1fr)_210px] md:items-center group"
                 >
                   <div>
                     <p className="font-bold text-bark">{item.userNickname || 'Ẩn danh'}</p>
@@ -230,10 +229,16 @@ export default function StaffWorkspace({ role }) {
                     <p className="text-sm font-medium text-bark-light/70">Cần hỗ trợ</p>
                     {item.aiInsights && <p className="mt-1 text-xs leading-5 text-bark-light/45 truncate">{item.aiInsights}</p>}
                   </div>
-                  <span className="rounded-full bg-sage-ghost px-3 py-1 text-xs font-bold text-sage-dark md:text-center">
-                    Đang chờ kết nối
-                  </span>
-                </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      claimCase(item.conversationId)
+                    }}
+                    className="rounded-full bg-sage-ghost px-4 py-2 text-xs font-bold text-sage-dark transition hover:bg-sage hover:text-white md:text-center"
+                  >
+                    Tiếp nhận ngay
+                  </button>
+                </div>
               ))}
               {queue.length === 0 && (
                 <p className="rounded-2xl bg-sage-ghost/55 p-4 text-sm leading-6 text-bark-light/58">

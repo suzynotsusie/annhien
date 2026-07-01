@@ -8,6 +8,8 @@ import {
   faShieldHalved,
   faUserDoctor,
   faUserGroup,
+  faTrash,
+  faChevronLeft,
 } from '@fortawesome/free-solid-svg-icons'
 import { staffProfiles } from '../lib/mockData'
 import { apiFetch } from '../lib/api-client'
@@ -32,10 +34,15 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [showMobileChat, setShowMobileChat] = useState(false)
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesEndRef.current) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+      }, 50)
+    }
   }
 
   useEffect(() => {
@@ -122,11 +129,13 @@ export default function Messages() {
           } else {
             connectToStaff('doctor')
           }
+          setShowMobileChat(true)
           setSearchParams({}, { replace: true })
           return // connectToStaff or setActiveId will handle the rest
         } else if (mode === 'ai') {
           const aiConvo = uniqueChats.find(c => c.isBot)
           if (aiConvo) setActiveId(aiConvo.id)
+          setShowMobileChat(true)
           setSearchParams({}, { replace: true })
         } else if (uniqueChats.length > 0 && !activeId) {
           setActiveId(uniqueChats[0].id)
@@ -147,6 +156,7 @@ export default function Messages() {
   useEffect(() => {
     if (!activeId) return
     const fetchMessages = async () => {
+      if (isAiLoading) return
       try {
         const res = await apiFetch(`/api/messages/${activeId}?limit=50`)
         const msgs = (res?.messages || []).map(m => ({
@@ -163,7 +173,7 @@ export default function Messages() {
     fetchMessages()
     const interval = setInterval(fetchMessages, 3000)
     return () => clearInterval(interval)
-  }, [activeId])
+  }, [activeId, isAiLoading])
 
   const connectToStaff = useCallback(async (role) => {
     try {
@@ -195,6 +205,7 @@ export default function Messages() {
 
       setChatList((items) => [nextChat, ...items])
       setActiveId(id)
+      setShowMobileChat(true)
     } catch (err) {
       console.error(err)
     }
@@ -267,10 +278,28 @@ export default function Messages() {
     handleSend('Mình muốn tiếp tục trò chuyện với AI')
   }
 
+  const handleDeleteChat = async () => {
+    if (!activeChat) return
+    if (!window.confirm('Bạn có chắc muốn xóa cuộc trò chuyện này?')) return
+    try {
+      await apiFetch(`/api/conversations/${activeChat.id}`, { method: 'DELETE' })
+      setChatList(prev => prev.filter(c => c.id !== activeChat.id))
+      setLocalMessages(prev => {
+        const newLocal = { ...prev }
+        delete newLocal[activeChat.id]
+        return newLocal
+      })
+      setActiveId(null)
+    } catch (err) {
+      console.error(err)
+      alert('Không thể xóa cuộc trò chuyện.')
+    }
+  }
+
   return (
-    <div className="min-h-dvh bg-cream">
-      <div className="mx-auto grid min-h-dvh w-full max-w-[1480px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:px-8 lg:py-6">
-        <aside className="flex min-h-[280px] min-w-0 flex-col rounded-3xl border border-white/70 bg-white/55 shadow-sm shadow-sage/5">
+    <div className="flex h-[calc(100dvh-5rem)] flex-col overflow-hidden bg-cream lg:h-dvh">
+      <div className="mx-auto grid h-full w-full max-w-[1480px] grid-cols-1 grid-rows-1 gap-0 sm:gap-4 p-0 sm:p-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:p-6">
+        <aside className={`${showMobileChat ? 'hidden' : 'flex'} min-h-0 min-w-0 flex-col bg-white/55 sm:rounded-3xl sm:border sm:border-white/70 sm:shadow-sm sm:shadow-sage/5 lg:flex`}>
           <div className="border-b border-bark-light/6 p-5">
             <div className="mb-4 flex min-w-0 items-end justify-between gap-3">
               <div className="min-w-0">
@@ -303,7 +332,10 @@ export default function Messages() {
               return (
                 <button
                   key={chat.id}
-                  onClick={() => setActiveId(chat.id)}
+                  onClick={() => {
+                    setActiveId(chat.id)
+                    setShowMobileChat(true)
+                  }}
                 className={`mb-2 flex w-full min-w-0 items-center gap-3 rounded-2xl p-3 text-left transition active:scale-[0.98] ${
                     isActive ? 'bg-sage-ghost shadow-sm shadow-sage/5' : 'hover:bg-white/60'
                   }`}
@@ -337,10 +369,17 @@ export default function Messages() {
           </div>
         </aside>
 
-        <section className="flex min-h-[calc(100dvh-2rem)] min-w-0 flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/55 shadow-sm shadow-sage/5 lg:min-h-0">
+        <section className={`${showMobileChat ? 'flex' : 'hidden'} min-h-0 min-w-0 flex-col overflow-hidden bg-white/55 sm:rounded-3xl sm:border sm:border-white/70 sm:shadow-sm sm:shadow-sage/5 lg:flex`}>
           {activeChat && (
             <>
-              <header className="flex items-center gap-3 border-b border-bark-light/6 px-5 py-4">
+              <header className="flex items-center gap-3 border-b border-bark-light/6 px-4 py-3 sm:px-5 sm:py-4">
+                <button
+                  onClick={() => setShowMobileChat(false)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-bark transition hover:bg-sage-ghost active:scale-95 lg:hidden"
+                  aria-label="Quay lại"
+                >
+                  <FontAwesomeIcon icon={faChevronLeft} />
+                </button>
                 <div className="relative shrink-0">
                   <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${activeChat.color}`}>
                     <span className="text-sm font-bold text-white">{activeChat.initials}</span>
@@ -357,15 +396,25 @@ export default function Messages() {
                   <p className="text-xs text-bark-light/42">{activeChat.online ? 'Đang hoạt động' : 'Ngoại tuyến'}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  {[activeChat.role === 'doctor' ? faUserDoctor : faUserGroup, faShieldHalved, faEllipsis].map((icon, index) => (
+                  {[activeChat.role === 'doctor' ? faUserDoctor : faUserGroup, faShieldHalved].map((icon, index) => (
                     <button
                       key={index}
                       className="flex h-10 w-10 items-center justify-center rounded-2xl text-sage transition hover:bg-sage-ghost active:scale-95"
                       aria-label="Hành động cuộc trò chuyện"
                     >
-                      <FontAwesomeIcon icon={icon} className={index === 2 ? 'text-bark-light/40' : ''} />
+                      <FontAwesomeIcon icon={icon} />
                     </button>
                   ))}
+                  <button
+                    onClick={handleDeleteChat}
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl text-red-400 transition hover:bg-red-50 active:scale-95"
+                    aria-label="Xóa cuộc trò chuyện"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                  <button className="flex h-10 w-10 items-center justify-center rounded-2xl text-sage transition hover:bg-sage-ghost active:scale-95">
+                    <FontAwesomeIcon icon={faEllipsis} className="text-bark-light/40" />
+                  </button>
                 </div>
               </header>
 

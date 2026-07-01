@@ -1,6 +1,6 @@
 import type { Response } from 'express';
 import type { AuthenticatedRequest } from '../middlewares/auth';
-import { createJournal, getJournalById, listMyJournals } from '../services/journals.service';
+import { createJournal, getJournalById, listMyJournals, deleteJournal } from '../services/journals.service';
 import type { CreateJournalBody, JournalIdParams, JournalListQuery } from '../validations/journals.validation';
 
 /**
@@ -21,6 +21,12 @@ export async function createJournalController(req: AuthenticatedRequest, res: Re
 export async function listMyJournalsController(req: AuthenticatedRequest, res: Response) {
   const payload = await listMyJournals(req.user!.userId, req.query as JournalListQuery);
   return res.status(200).json(payload);
+}
+
+export async function deleteJournalController(req: AuthenticatedRequest, res: Response) {
+  const { id } = req.params as JournalIdParams;
+  await deleteJournal(req.user!.userId, id);
+  return res.status(200).json({ success: true });
 }
 
 /**

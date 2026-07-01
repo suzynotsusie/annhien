@@ -14,9 +14,41 @@ export default function JournalEditor({ onSaved }) {
   const [error, setError] = useState('')
   const [sosOpen, setSosOpen] = useState(false)
   const [sosMessage, setSosMessage] = useState('')
+  const [isAnalyzingMood, setIsAnalyzingMood] = useState(false)
 
-  const isBusy = status === 'triage' || status === 'saving'
+  const isBusy = status === 'triage' || status === 'saving' || isAnalyzingMood
   const selectedMood = MOOD_OPTIONS.find((item) => item.value === mood) || MOOD_OPTIONS[2]
+
+  const handleAutoAnalyzeMood = async () => {
+    const plainText = content.trim()
+    if (!plainText) {
+      setError('Hãy viết ít nhất một dòng để AI có thể hiểu cảm xúc của cậu nhé.')
+      return
+    }
+
+    setError('')
+    setIsAnalyzingMood(true)
+
+    try {
+      const triage = await apiFetch('/api/ai/triage', {
+        method: 'POST',
+        body: JSON.stringify({ plainText }),
+      })
+
+      if (triage?.mood) {
+        setMood(triage.mood)
+      }
+      
+      if (triage?.triggerSOS === true || triage?.riskLevel === 'high') {
+        setSosMessage(triage?.suggestedResponse || HIGH_RISK_MESSAGE)
+        setSosOpen(true)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không thể phân tích cảm xúc lúc này.')
+    } finally {
+      setIsAnalyzingMood(false)
+    }
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -36,12 +68,7 @@ export default function JournalEditor({ onSaved }) {
         body: JSON.stringify({ plainText }),
       })
 
-      if (triage?.triggerSOS === true || triage?.riskLevel === 'high') {
-        setSosMessage(triage?.suggestedResponse || HIGH_RISK_MESSAGE)
-        setSosOpen(true)
-        setStatus('idle')
-        return
-      }
+      const isSOS = triage?.triggerSOS === true || triage?.riskLevel === 'high'
 
       const encryptedContent = encryptClientSide(plainText)
       setStatus('saving')
@@ -55,6 +82,11 @@ export default function JournalEditor({ onSaved }) {
       setMood('okay')
       setStatus('idle')
       onSaved?.(saved)
+
+      if (isSOS) {
+        setSosMessage(triage?.suggestedResponse || HIGH_RISK_MESSAGE)
+        setSosOpen(true)
+      }
     } catch (err) {
       setStatus('idle')
       setError(err instanceof Error ? err.message : 'Không thể lưu nhật ký lúc này.')
@@ -88,9 +120,20 @@ export default function JournalEditor({ onSaved }) {
 
         <div className="p-5 sm:p-6">
           <div className="mb-5">
-            <div className="mb-3 flex items-center gap-2 text-sm font-bold text-bark">
-              <HeartPulse size={18} className="text-sage" />
-              Hôm nay cậu đang ở đâu trên bản đồ cảm xúc?
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-sm font-bold text-bark">
+                <HeartPulse size={18} className="text-sage" />
+                Hôm nay cậu đang ở đâu trên bản đồ cảm xúc?
+              </div>
+              <button
+                type="button"
+                onClick={handleAutoAnalyzeMood}
+                disabled={isAnalyzingMood || !content.trim()}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-sage-ghost px-3 py-1.5 text-xs font-bold text-sage-dark transition hover:bg-sage/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isAnalyzingMood ? <LoaderCircle className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                AI Phân tích
+              </button>
             </div>
             <div className="grid gap-2 sm:grid-cols-5">
               {MOOD_OPTIONS.map((option) => {

@@ -3,6 +3,7 @@ import {
   createJournalController,
   getJournalByIdController,
   listMyJournalsController,
+  deleteJournalController
 } from '../controllers/journals.controller';
 import { verifyToken } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
@@ -45,5 +46,15 @@ router.get(
   ),
   getJournalByIdController
 );
-
+router.delete(
+  '/:id',
+  validate(
+    { params: journalIdParamSchema },
+    {
+      code: 'INVALID_JOURNAL_ID',
+      message: 'JournalId khong hop le',
+    }
+  ),
+  deleteJournalController
+);
 export default router;

@@ -37,10 +37,10 @@ export default function Login() {
         role: data.role,
         userId: data.userId,
         nickname: data.nickname,
-        onboarded: data.role !== 'user',
+        onboarded: true,
       })
 
-      navigate(roleHome(data.role, data.role !== 'user'), { replace: true })
+      navigate(roleHome(data.role, true), { replace: true })
     } catch (err) {
       setError(err.message || 'Không thể đăng nhập')
     } finally {
